@@ -1,0 +1,249 @@
+@page "/profile"
+@using Microsoft.AspNetCore.Components.Forms
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<div class="header-bar-home">
+    <img src="@headerAvatarUrl" alt="User profile" class="profile-pic" />
+    <h3 class="h5 header-title">Profile</h3>
+</div>
+
+<div class="profile-wrapper">
+    <div class="avatar-wrap">
+    <img src="@avatarUrl" class="profile-pic-large" alt="Profile photo" />
+    <button class="avatar-edit" @onclick="ChangePhoto">📷</button>
+
+    <!-- Hidden file picker -->
+    <InputFile id="avatarFile"
+               OnChange="OnAvatarSelected"
+               accept="image/*"
+               style="display:none" />
+</div>
+
+    <h2 class="name h5">@DisplayName</h2>
+
+    @if (!isEditingName)
+    {
+        <button class="edit-name" @onclick="StartEditName">Edit Name</button>
+    }
+    else
+    {
+        <div class="name-edit">
+            <input class="name-input" placeholder="First name" @bind="firstName" />
+            <input class="name-input" placeholder="Last name"  @bind="lastName" />
+            <div class="name-actions">
+                <button class="primary-btn small" @onclick="SaveName">Save</button>
+                <button class="link-btn" @onclick="CancelEdit">Cancel</button>
+            </div>
+        </div>
+    }
+
+    @* Toast *@
+    @if (showSavedToast)
+    {
+    <div class="success-toast">
+        <span class="icon">✓</span>
+        <span class="caption">@toastText</span>
+    </div>
+    }
+
+    <div class="profile-list">
+        <div class="profile-item" @onclick="GoAccount"><span>My Account</span><span class="chev">›</span></div>
+        <div class="profile-item" @onclick="GoDietary"><span>Dietary Preferences</span><span class="chev">›</span></div>
+        <div class="profile-item" @onclick="GoAllergies"><span>Allergies</span><span class="chev">›</span></div>
+        <div class="profile-item" @onclick="GoStyles"><span>Eating Styles</span><span class="chev">›</span></div>
+        <div class="profile-item" @onclick="GoWeight"><span>Weight</span><span class="chev">›</span></div>
+        <div class="profile-item" @onclick="GoSpice"><span>Spice Preference</span><span class="chev">›</span></div>
+        <div class="profile-item" @onclick="GoFlavors"><span>Flavor Profiles</span><span class="chev">›</span></div>
+    </div>
+</div>
+
+<div class="nav-wrapper">
+  <div class="bottom-nav">
+    <img src="images/icons/recipes.svg" alt="Recipes" class="nav-icon" @onclick="GoRecipes" />
+    <img src="images/icons/home.svg"    alt="Home"    class="nav-icon" @onclick="GoHome" />
+    <img src="images/icons/profile.svg" alt="Profile" class="nav-icon active" />
+  </div>
+</div>
+
+@code {
+    private string firstName = "";
+    private string lastName  = "";
+    private string avatarUrl = "images/profile.png";
+    private bool isEditingName = false;
+    private bool showSavedToast;
+    private string toastText = "Saved";
+
+    string DisplayName =>
+        string.IsNullOrWhiteSpace(firstName + lastName) ? "Your Name" : $"{firstName} {lastName}".Trim();
+
+    protected override async Task OnInitializedAsync()
+    {
+        firstName = await JS.InvokeAsync<string>("localStorage.getItem", "userFirstName") ?? "";
+        lastName  = await JS.InvokeAsync<string>("localStorage.getItem", "userLastName")  ?? "";
+        var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "userAvatarUrl");
+        if (!string.IsNullOrWhiteSpace(storedAvatar)) avatarUrl = storedAvatar;
+        {
+            avatarUrl = storedAvatar;
+            headerAvatarUrl = storedAvatar;   // 👈 keep header in sync on load
+        }
+    }
+
+    void StartEditName() => isEditingName = true;
+    void CancelEdit()    => isEditingName = false;
+
+    async Task SaveName()
+    {
+        await JS.InvokeVoidAsync("localStorage.setItem", "userFirstName", firstName);
+        await JS.InvokeVoidAsync("localStorage.setItem", "userLastName",  lastName);
+        try { await JS.InvokeVoidAsync("firebaseInterop.updateUserName", "testUserId", firstName, lastName); } catch { }
+
+        isEditingName = false;
+
+        toastText = "Saved your name";
+        showSavedToast = true;
+        StateHasChanged();
+        _ = HideToastSoon();
+    }
+
+    private async Task HideToastSoon()
+    {
+        await Task.Delay(3000);
+        showSavedToast = false;
+        StateHasChanged();
+    }
+
+    private string headerAvatarUrl = "images/profile.png";
+
+    // Row handlers
+    void GoAccount()   => NavigationManager.NavigateTo("/account");
+    void GoDietary()   => NavigationManager.NavigateTo("/dietary");
+    void GoAllergies() => NavigationManager.NavigateTo("/allergies");
+    void GoStyles()    => NavigationManager.NavigateTo("/styles");
+    void GoWeight()    => NavigationManager.NavigateTo("/weight");
+    void GoSpice()     => NavigationManager.NavigateTo("/spice");
+    void GoFlavors()   => NavigationManager.NavigateTo("/flavors");
+
+    // Bottom nav
+    void GoRecipes()   => NavigationManager.NavigateTo("/recipes");
+    void GoHome()      => NavigationManager.NavigateTo("/home");
+
+    // 📷 Change photo flow
+    async Task ChangePhoto()
+    {
+        await JS.InvokeVoidAsync("mm.clickById", "avatarFile");
+    }
+
+    private const long MaxUploadBytes = 2 * 1024 * 1024; // 2MB
+
+    private async Task OnAvatarSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+
+        const int targetSize = 256;
+        var format = "image/png";
+        var resized = await file.RequestImageFileAsync(format, targetSize, targetSize);
+
+        using var stream = resized.OpenReadStream(MaxUploadBytes);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        var bytes = ms.ToArray();
+
+        avatarUrl = $"data:{format};base64,{Convert.ToBase64String(bytes)}";
+        headerAvatarUrl = avatarUrl;  // 👈 update header immediately on Profile
+        await JS.InvokeVoidAsync("localStorage.setItem", "userAvatarUrl", avatarUrl);
+
+        toastText = "Updated profile photo";
+        showSavedToast = true;
+        StateHasChanged();
+        _ = HideToastSoon();
+    }
+}
+
+
+<style>
+/* Layout */
+.profile-wrapper{
+  color:#F2F2F2; padding:24px 16px; display:flex; flex-direction:column; align-items:center;
+}
+
+/* Avatar */
+.avatar-wrap{ position:relative; width:96px; height:96px; margin-top:8px; }
+.profile-pic-large{ width:96px; height:96px; border-radius:50%; object-fit:cover; display:block; }
+.avatar-edit{
+  position:absolute; bottom:-6px; right:-6px; width:32px; height:32px;
+  border-radius:50%; border:1px solid rgba(255,255,255,.2);
+  background:#2a2a2a; color:#F2F2F2; cursor:pointer;
+}
+
+/* Name */
+.name{ margin:12px 0 4px 0; text-align:center; }
+.edit-name{ background:none; border:none; color:#B1A8FF; text-decoration:underline; cursor:pointer; }
+
+/* Inline edit */
+.name-edit{ width:100%; max-width:360px; margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+.name-input{ width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,.15); background:#141414; color:#F2F2F2; }
+.name-actions{ display:flex; gap:12px; align-items:center; }
+.primary-btn.small{ padding:10px 16px; font-size:14px; border-radius:10px; }
+.link-btn{ background:none; border:none; color:#B0B0B0; text-decoration:underline; cursor:pointer; }
+
+/* List */
+.profile-list{ width:100%; max-width:560px; margin-top:24px; }
+.profile-item{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:18px 0; border-bottom:1px solid rgba(255,255,255,.08); color:#E0E0E0; font-size:16px; cursor:pointer;
+}
+.profile-item .chev{ opacity:.6; }
+
+/* Active nav icon */
+.bottom-nav .active{ transform:scale(1.2); opacity:1; }
+
+/* Toast */
+.success-toast {
+  position: fixed;
+  top: 70px;                      /* distance from top */
+  left: 50%;
+  transform: translateX(-50%);    /* center horizontally ONLY */
+  width: 343px;
+  height: 40px;
+  background: #D1FAE5;
+  border: 1.5px solid #4ADE80;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;            /* vertical centering of content */
+  justify-content: center;        /* horizontal centering */
+  gap: 8px;
+  padding: 0 14px;
+  z-index: 999;
+  opacity: 0;
+  animation: fadeInSlide 0.25s ease-out forwards,
+             fadeOutSlide 0.25s ease-in 2.8s forwards;
+  box-sizing: border-box;
+}
+
+.success-toast .icon {
+  font-size: 16px;
+  color: #22C55E;
+  line-height: 1;
+  transform: translateY(1px);     /* visually nudge down for perfect balance */
+}
+
+.success-toast .caption {
+  font-size: 13px;                /* matches your caption scale */
+  font-weight: 500;
+  font-family: 'Roboto', sans-serif;
+  color: #111;                    /* readable on mint */
+  line-height: 1;
+  margin: 0;
+}
+
+@@keyframes fadeInSlide {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@@keyframes fadeOutSlide {
+  to   { opacity: 0; transform: translate(-50%, -8px); }
+}
+</style>

@@ -1,0 +1,30 @@
+@page "/recipes/{id}"
+@using MacroMunch.Models
+@inject NavigationManager Nav
+
+<div class="detail-placeholder">
+    <h3 class="h5">Recipe detail coming soon 👩🏽‍🍳</h3>
+</div>
+
+<style>
+.detail-placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;            /* centers vertically with breathing room */
+  text-align: center;
+  color: #F2F2F2;
+  font-family: 'Roboto', sans-serif;
+  gap: 8px;
+}
+.detail-placeholder .h5 {
+  font-size: 18px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+</style>
+
+@code {
+    [Parameter] public string id { get; set; } = "";
+}

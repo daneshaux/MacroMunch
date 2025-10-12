@@ -1,0 +1,54 @@
+@page "/spice-level"
+@inject IJSRuntime JS
+
+<div class="header-bar">
+    <span class="back-arrow" @onclick="GoBack">←</span>
+    <h3 class="h5 header-title">Finish signing up</h3>
+</div>
+
+<div class="goal-selection-container">
+    <h2 class="h2">How spicy do you like your food?</h2>
+
+    <div class="slider-wrapper">
+        <input type="range" min="0" max="4" step="1" @bind="spiceLevel" class="spice-slider" />
+        <div class="slider-labels">
+            <span>🧊</span>
+            <span>🌶️</span>
+            <span>🔥</span>
+            <span>🥵</span>
+            <span>😵‍💫</span>
+        </div>
+        <div class="spice-legend caption" style="margin-top: 16px;">
+            <div>🧊 Not Spicy</div>
+            <div>🌶️ Mild</div>
+            <div>🔥 Medium</div>
+            <div>🥵 Spicy</div>
+            <div>😵‍💫 Extra Hot</div>
+        </div>
+    </div>
+
+    <button class="primary-btn" style="margin-top: 40px;" @onclick="Continue">
+        Continue
+    </button>
+</div>
+
+@code {
+    private int spiceLevel = 2; // default to medium
+    private string userId = "testUserId"; // Replace with real user ID!
+
+    private async Task Continue()
+    {
+        // Save to Firebase
+        await JS.InvokeVoidAsync("firebaseInterop.saveSpiceLevel", userId, spiceLevel);
+
+        // Navigate to the next screen
+        NavigationManager!.NavigateTo("/flavor-profiles");
+    }
+
+    private void GoBack()
+    {
+        NavigationManager!.NavigateTo("/eating-styles");
+    }
+
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+}

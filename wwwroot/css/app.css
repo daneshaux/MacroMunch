@@ -1,0 +1,584 @@
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    color: #F2F2F2;
+    background-color: #0F0F0F;
+}
+
+input, button {
+    box-sizing: border-box;
+}
+
+/* Typography */
+.h1 {
+    font-family: 'Big Shoulders Display', cursive;
+    font-size: 36px;
+    font-weight: 800;
+}
+
+.h2 {
+    font-family: 'Big Shoulders Display', cursive;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 40px;
+}
+
+.h3 {
+    font-family: 'Big Shoulders Display', cursive;
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    color: #F2F2F2;
+    margin-bottom: 16px;
+}
+
+.h4 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.h5 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.h6 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.body-text {
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.caption {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: #B0B0B0;
+    margin: 0;
+    margin-bottom: 64px;
+    text-align: center;
+}
+
+/* Layout */
+.welcome-container {
+    padding: 40px 24px;
+    color: #F2F2F2;
+    background-color: #0F0F0F;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.form-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Components */
+.logo {
+    width: 100%;
+    max-width: 160px;
+    height: auto;
+    margin-bottom: 16px;
+}
+
+.email-input {
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1.5px solid #B0B0B0;
+    background-color: #0F0F0F;
+    color: #B0B0B0;
+    font-size: 16px;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+    display: block;
+}
+
+.primary-btn {
+    background-color: #4ADE80;
+    color: black;
+    font-weight: bold;
+    border: none;
+    padding: 12px 24px;
+    font-size: 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 32px;
+}
+
+.primary-btn:hover {
+    background-color: #3ed06d;
+}
+
+.divider {
+    margin: 0;
+    font-size: 16px;
+    color: #B0B0B0;
+    margin-bottom: 32px;
+}
+
+.secondary-btn {
+    background-color: #0F0F0F;
+    color: #4ADE80;
+    border: 1.5px solid #4ADE80;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 16px;
+}
+
+.secondary-btn:hover {
+    background-color: #1A1A1A;
+}
+
+.secondary-btn i {
+    margin-right: 8px;
+}
+
+.goal-selection-container {
+    padding: 40px 24px;
+    background-color: #0F0F0F;
+    color: #F2F2F2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.goal-options {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px; /* Updated per your notes */
+    width: 100%;
+    padding: 0 16px;
+    box-sizing: border-box;
+}
+
+.goal-btn {
+    background-color: #1E1E1E;
+    color: #F2F2F2;
+    border: none;
+    padding: 0;
+    height: 140px;
+    border-radius: 12px;
+    font-size: 24px;
+    font-family: 'Big Shoulders Display', cursive;
+    font-weight: 700;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    cursor: pointer;
+    width: 100%;
+    max-width: 320px;
+}
+
+.goal-btn.selected {
+    border: 2px solid #4ADE80;
+    background-color: #0F0F0F;
+    color: #4ADE80;
+}
+
+
+.header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    padding: 16px 24px;
+    border-bottom: 1px solid #1E1E1E;
+    background-color: #0F0F0F;
+    box-sizing: border-box;
+    height: 56px; /* NEW: prevents wrapping */
+}
+
+.header-bar .h5 {
+    white-space: nowrap;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.back-arrow {
+    position: absolute;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 20px;
+    cursor: pointer;
+    color: #F2F2F2;
+}
+
+.manual-link {
+    margin-top: 40px;
+    font-size: 16px;
+    color: #4ADE80;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+/* Form Styling */
+
+.user-info-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 16px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-top: 40px;
+}
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 16px;
+    height: 52px; /* Match the height of the input */
+}
+
+.password-input {
+    padding: 14px 40px 14px 16px; /* make space for eye icon */
+    border-radius: 10px;
+    border: 1.5px solid #B0B0B0;
+    background-color: #0F0F0F;
+    color: #B0B0B0;
+    font-size: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    max-width: 320px;
+}
+
+.toggle-password {
+    position: absolute;
+    top: 0;
+    right: 12px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #B0B0B0;
+    padding: 0;
+}
+
+/*Dietary Preferences Cards*/
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px 16px;
+    width: 100%;
+    max-width: 360px;
+}
+
+.diet-card {
+    width: 100%;
+    height: 80px;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    border: 1.5px solid rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-color: #1E1E1E;
+}
+
+.diet-card .card-overlay {
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(1px);
+    color: #F2F2F2;
+    font-size: 16px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+.diet-card.selected {
+    border: 1.5px solid #4ADE80;
+    background-color: #0F0F0F;
+    color: #4ADE80;
+}
+
+/* Spice Level */
+
+.slider-wrapper {
+    width: 100%;
+    max-width: 320px;
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.spice-slider {
+    width: 100%;
+    appearance: none;
+    height: 12px; /* was 6px */
+    border-radius: 6px;
+    background: #4ADE80;
+    outline: none;
+    margin-bottom: 16px;
+}
+
+.spice-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; /* 👈 THIS IS THE SECRET SAUCE */
+    width: 32px;
+    height: 32px;
+    background: #4ADE80;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+}
+
+.spice-slider::-moz-range-thumb {
+    width: 32px;
+    height: 32px;
+    background: #4ADE80;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid white;
+}
+
+
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 20px;
+    padding: 0 4px;
+    color: #B0B0B0;
+}
+
+/* Home Meal Plan Screen Styles */
+
+.home-container {
+    background-color: #0F0F0F;
+    color: #B0B0B0;
+    min-height: 100vh;
+    padding-bottom: 120px; /* keep space for nav bar */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.header-bar-home {
+    width: 100%;
+    position: relative; /* 👈 important! */
+    padding: 24px 24px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background-color: #0F0F0F;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* 👈 centers the header text */
+}
+
+.header-bar-home h3 {
+    font-family: 'Roboto', sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: #F2F2F2;
+    margin: 0;
+}
+
+.profile-pic {
+    position: absolute;
+    left: 24px; /* 👈 stays 24px from the left edge */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.meal-card {
+    background-color: #1E1E1E;
+    width: 100%;
+    max-width: 320px;
+    margin: 40px auto 0 auto;
+    border-radius: 12px;
+    padding: 24px 16px;
+    box-sizing: border-box;
+}
+
+.meal-top-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.meal-type {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Roboto', sans-serif;
+    color: #B0B0B0;
+}
+
+.calories {
+    font-size: 14px;
+    font-family: 'Roboto', sans-serif;
+    color: #B0B0B0;
+    font-weight: 400;
+}
+
+.meal-image {
+    width: 100%;
+    height: 180px;
+    border-radius: 10px;
+    object-fit: cover;
+    margin-bottom: 12px;
+}
+
+.meal-name {
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    color: #B0B0B0;
+    margin-bottom: 12px;
+}
+
+.macro-row {
+    display: flex;
+    justify-content: space-between;
+    text-align: center;
+    font-size: 14px;
+    font-family: 'Roboto', sans-serif;
+    color: #B0B0B0;
+}
+
+.macro-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.macro-group span:first-child {
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.app-wrapper {
+    max-width: 320px;
+    margin: 0 auto;
+    position: relative;
+    padding-bottom: 120px; /* space for nav bar */
+}
+
+.nav-wrapper {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 252px;
+    max-width: 320px;
+    height: 72px;
+    background-color: #4ADE80;
+    border-radius: 30px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    z-index: 100;
+    pointer-events: auto;
+}
+
+.nav-icon {
+    width: 32px;
+    height: 32px;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    opacity: 0.8;
+}
+
+.nav-icon.active {
+    transform: scale(1.25);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.25));
+}
+
+.bottom-nav img {
+    width: 40px;
+    height: 40px;
+}
+
+/* Hide error messages by default */
+#blazor-error-ui {
+    display: none !important;
+}
+
+/* Home Page empty state */
+.empty-state {
+    text-align: center;
+    padding: 120px 20px;
+    color: white;
+}
+
+.empty-title {
+    font-size: 1.8rem;
+    margin-bottom: 0.4rem;
+}
+
+.empty-sub {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 1.5rem;
+}

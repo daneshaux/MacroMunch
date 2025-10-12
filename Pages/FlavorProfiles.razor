@@ -1,0 +1,71 @@
+@page "/flavor-profiles"
+@inject IJSRuntime JS
+
+<div class="header-bar">
+    <span class="back-arrow" @onclick="GoBack">←</span>
+    <h3 class="h5 header-title">Finish signing up</h3>
+</div>
+
+<div class="goal-selection-container">
+    <h2 class="h2">Last thing! What flavor profiles do you like?</h2>
+
+    <div class="card-grid">
+        @foreach (var flavor in flavorOptions)
+        {
+            <div class="diet-card @(selectedFlavors.Contains(flavor) ? "selected" : "")"
+                 style="background-image: url('@flavorImages[flavor]');"
+                 @onclick="() => ToggleFlavor(flavor)">
+                <div class="card-overlay">@flavor</div>
+            </div>
+        }
+    </div>
+
+    <button class="primary-btn" style="margin-top: 40px;" @onclick="Continue">
+        Continue
+    </button>
+</div>
+
+@code {
+    private List<string> flavorOptions = new()
+    {
+        "Sweet", "Savory", "Umami", "Tangy", "Smoky", "Creamy"
+    };
+
+    private HashSet<string> selectedFlavors = new();
+    private string userId = "testUserId"; // Replace with real user ID!
+
+    private void ToggleFlavor(string flavor)
+    {
+        if (selectedFlavors.Contains(flavor))
+            selectedFlavors.Remove(flavor);
+        else
+            selectedFlavors.Add(flavor);
+    }
+
+    private async Task Continue()
+    {
+        // Save to Firebase
+        await JS.InvokeVoidAsync("firebaseInterop.saveFlavorProfiles", userId, selectedFlavors);
+
+        Console.WriteLine("Selected Flavor Profiles: " + string.Join(", ", selectedFlavors));
+        await Task.Delay(200); // short UX pause
+        NavigationManager!.NavigateTo("/loading");
+    }
+
+    private void GoBack()
+    {
+        NavigationManager!.NavigateTo("/spice-level");
+    }
+
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+
+    private Dictionary<string, string> flavorImages = new()
+    {
+        { "Sweet", "images/flavor/sweet.png" },
+        { "Savory", "images/flavor/savory.png" },
+        { "Umami", "images/flavor/umami.png" },
+        { "Tangy", "images/flavor/tangy.png" },
+        { "Smoky", "images/flavor/smoky.png" },
+        { "Creamy", "images/flavor/creamy.png" }
+    };
+}

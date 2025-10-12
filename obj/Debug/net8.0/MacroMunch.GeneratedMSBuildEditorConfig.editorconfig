@@ -1,0 +1,115 @@
+is_global = true
+build_property.EnableAotAnalyzer = 
+build_property.EnableSingleFileAnalyzer = 
+build_property.EnableTrimAnalyzer = false
+build_property.IncludeAllContentForSelfExtract = 
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = browser
+build_property.RootNamespace = MacroMunch
+build_property.RootNamespace = MacroMunch
+build_property.ProjectDir = /Users/daneshawilliams/MacroMunch 2/
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = false
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = /Users/daneshawilliams/MacroMunch 2
+build_property._RazorSourceGeneratorDebug = 
+
+[/Users/daneshawilliams/MacroMunch 2/App.razor]
+build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Components/MealCategoryChip.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9NZWFsQ2F0ZWdvcnlDaGlwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Components/RecipeCard.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9SZWNpcGVDYXJkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Components/RecipeSearchBar.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9SZWNpcGVTZWFyY2hCYXIucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Components/RecipeSection.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9SZWNpcGVTZWN0aW9uLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Components/StarRating.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9TdGFyUmF0aW5nLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Components/TagChip.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50cy9UYWdDaGlwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/Allergies.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvQWxsZXJnaWVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/DietaryPreferences.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRGlldGFyeVByZWZlcmVuY2VzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/EatingStyles.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRWF0aW5nU3R5bGVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/FlavorProfiles.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRmxhdm9yUHJvZmlsZXMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/GoalSelection.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvR29hbFNlbGVjdGlvbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/Index.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSW5kZXgucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/LoadingScreen.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTG9hZGluZ1NjcmVlbi5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/ManualEntry.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvTWFudWFsRW50cnkucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/Profile.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUHJvZmlsZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/RecipeDetail.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUmVjaXBlRGV0YWlsLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/Recipes.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvUmVjaXBlcy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/SpiceLevel.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvU3BpY2VMZXZlbC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Pages/UserInfoForm.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvVXNlckluZm9Gb3JtLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/daneshawilliams/MacroMunch 2/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L01haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-0wnulvzqx6

@@ -1,0 +1,43 @@
+@* Emits OnSearch when user types/submits *@
+<div class="recipe-search">
+  <img src="images/icons/search.svg" class="search-icon" alt="Search" />
+  <input class="recipe-search-input"
+         placeholder="@Placeholder"
+         @bind="Query"
+         @bind:after="HandleChanged" />
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnSearch { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Search Recipes";
+    public string Query { get; set; } = "";
+
+    private async Task HandleChanged() => await OnSearch.InvokeAsync(Query);
+}
+
+<style>
+/* container */
+.recipe-search{
+  display:flex; align-items:center;
+  height:40px;
+  background:#1E1E1E;            /* fill */
+  border:none;                    /* no stroke */
+  border-radius:10px;
+  padding:0 16px;                 /* icon 16px from left edge */
+  width:100%;
+  max-width:343px;                /* match your layout width */
+  margin:0;     /* center within wrapper */
+}
+
+/* 16x16 icon, 8px gap to text */
+.search-icon{ width:16px; height:16px; margin-right:8px; opacity:0.8; }
+
+/* body text style + color */
+.recipe-search-input{
+  flex:1; background:transparent; border:none; outline:none;
+  font-family:'Roboto',sans-serif;
+  font-size:15px;                 /* your body scale */
+  color:#B0B0B0;
+}
+.recipe-search-input::placeholder{ color:#B0B0B0; opacity:1; }
+</style>

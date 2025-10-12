@@ -1,0 +1,278 @@
+@page "/recipes"
+@using MacroMunch.Models
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<div class="header-bar-home">
+    <img src="@headerAvatarUrl" alt="User profile" class="profile-pic" />
+    <h3 class="h5 header-title">Recipes</h3>
+</div>
+
+<div class="recipes-wrapper">
+    <!-- Search -->
+    <RecipeSearchBar OnSearch="HandleSearch" Placeholder="Search Recipes" />
+
+    <!-- Category chips -->
+    <div class="category-row">
+    @foreach (var c in Categories)
+    {
+        var img = CategoryImages.TryGetValue(c, out var path) ? path : null; // "All" gets null
+        <MealCategoryChip Label="@c"
+                          ImageUrl="@img"
+                          Active="@(activeCategory == c)"
+                          OnClick="(() => SelectCategory(c))" />
+    }
+  </div>
+
+    <!-- Sections -->
+    <RecipeSection Title="Recommended for you"
+                   Items="Recommended"
+                   OnSelect="OpenRecipe"
+                   OnToggleFavorite="ToggleFavorite" />
+
+    <RecipeSection Title="Recently added"
+                   Items="Recent"
+                   OnSelect="OpenRecipe"
+                   OnToggleFavorite="ToggleFavorite" />
+
+    <RecipeSection Title="High Protein"
+                   Items="HighProtein"
+                   OnSelect="OpenRecipe"
+                   OnToggleFavorite="ToggleFavorite" />
+</div>
+
+<div class="nav-wrapper">
+  <div class="bottom-nav">
+    <img src="images/icons/recipes.svg" alt="Recipes" class="@RecipesClass" />
+    <img src="images/icons/home.svg"    alt="Home"    class="@HomeClass" @onclick="GoHome" />
+    <img src="images/icons/profile.svg" alt="Profile" class="@ProfileClass" @onclick="GoProfile" />
+  </div>
+</div>
+
+@code {
+   // -- Categories
+   private readonly Dictionary<string, string> CategoryImages = new()
+    {
+        // Update filenames to match your actual files in wwwroot/images/categories/...
+        { "Breakfast", "images/categories/breakfast.svg" },
+        { "Lunch",     "images/categories/lunch.svg" },
+        { "Dinner",    "images/categories/dinner.svg" },
+        { "Snack",     "images/categories/snack.svg" },
+    };
+   
+   // --- Mock data (uses the 4 images you added) ---
+    private List<Recipe> all = new()
+    {
+        new Recipe {
+            Id="pancakes", Name="Blueberry Pancakes",
+            ImageUrl="images/recipes/pancakes.png",
+            Category="Breakfast", DietaryTags=new(){"Vegan"},
+            Rating=4.9, PrepTime=15
+        },
+        new Recipe {
+            Id="chili", Name="Beyond Chili",
+            ImageUrl="images/recipes/beyond-chili.png",
+            Category="Dinner", DietaryTags=new(){"Gluten-free"},
+            Rating=4.6, PrepTime=30
+        },
+        new Recipe {
+            Id="pops", Name="Raspberry Pops",
+            ImageUrl="images/recipes/raspberry-pops.png",
+            Category="Snack", DietaryTags=new(){"Kosher"},
+            Rating=4.7, PrepTime=10
+        },
+        new Recipe {
+            Id="ravioli", Name="Mushroom Ravioli",
+            ImageUrl="images/recipes/mushroom-ravioli.png",
+            Category="Dinner", DietaryTags=new(){"Vegetarian"},
+            Rating=4.5, PrepTime=25
+        },
+    };
+
+    // --- UI state ---
+    private readonly string[] Categories = new[] { "Breakfast", "Lunch", "Dinner", "Snack" };
+    
+    // null/empty == show all
+    private string? activeCategory = null;
+    
+    private string query = "";
+
+    // --- Derived lists for sections ---
+    IEnumerable<Recipe> Recommended =>
+        Filtered().Take(6);
+
+    IEnumerable<Recipe> Recent =>
+        Filtered().Reverse().Take(6);
+
+    IEnumerable<Recipe> HighProtein =>
+        Filtered().Where(r => r.DietaryTags.Contains("Gluten-free")
+                           || r.DietaryTags.Contains("Vegetarian")) // placeholder rule
+                  .Take(6);
+
+    // --- Filtering logic ---
+    private IEnumerable<Recipe> Filtered()
+    {
+        IEnumerable<Recipe> set = all;
+
+        if (!string.IsNullOrWhiteSpace(activeCategory))
+            set = set.Where(r => r.Category.Equals(activeCategory, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(query))
+            set = set.Where(r => r.Name.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+        return set;
+    }
+
+    // --- Handlers ---
+    void HandleSearch(string q) { query = q ?? ""; }
+    void SelectCategory(string c)
+      {
+          activeCategory = (activeCategory == c) ? null : c;
+      }
+    void ToggleFavorite(Recipe r) { r.IsFavorite = !r.IsFavorite; }
+    void OpenRecipe(Recipe r)
+        {
+            Nav.NavigateTo($"/recipes/{r.Id}");
+        }
+
+    // --- Navigation bar (basic) ---
+    private string activePage = "recipes";
+    string RecipesClass => activePage == "recipes" ? "nav-icon active" : "nav-icon";
+    string HomeClass    => activePage == "home" ? "nav-icon active" : "nav-icon";
+    string ProfileClass => activePage == "profile" ? "nav-icon active" : "nav-icon";
+    void GoHome()    => Nav.NavigateTo("/home");
+    void GoProfile() => Nav.NavigateTo("/profile");
+
+    private string headerAvatarUrl = "images/profile.png";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "userAvatarUrl");
+            if (!string.IsNullOrWhiteSpace(storedAvatar))
+                headerAvatarUrl = storedAvatar;
+            StateHasChanged();
+        }
+    }
+}
+
+<style>
+/* page container */
+.recipes-wrapper {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* adds vertical rhythm */
+}
+
+/* category chips row */
+.category-row {
+  display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px;
+}
+
+/* section + row */
+.recipe-section { margin-bottom: 24px; }
+.section-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color:#F2F2F2;
+}
+.section-header .view-all {
+  background: none; border: none; color: #F2F2F2; opacity: .8; cursor: pointer;
+}
+
+.section-header h5 { margin: 0; font-size: 16px; font-weight: 600; color:#F2F2F2; 
+}
+
+.recipe-row {
+  margin-top: 8px; /* 8px space above cards */
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* card */
+.recipe-card {
+  position: relative; overflow: hidden; border-radius: 10px;
+  background: #111; border: none;
+}
+.recipe-card-img {
+  width: 100%; height: 170px; object-fit: cover; display: block;
+}
+.recipe-card-tag { position: absolute; top: 8px; left: 8px; z-index: 2; }
+
+.recipe-card-overlay {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 8px 12px 10px; background: rgba(15,15,15,0.70);
+    box-sizing: border-box;
+}
+/* Title + spacing */
+.recipe-card-title {
+    font-size: 14px;          /* smaller for balance */
+    font-weight: 500;         /* medium weight instead of bold */
+    color: #F2F2F2;
+    margin: 0 0 8px 0;        /* 8px above stars/time */
+    line-height: 1.2;
+    white-space: nowrap;      /* force single line */
+    overflow: hidden;         /* hides overflow text */
+    text-overflow: ellipsis;  /* adds "..." if it’s too long */
+}
+.recipe-card-meta { display:flex; align-items:center; justify-content:space-between; font-size: 13px; opacity: .95; }
+.prep { opacity: .9; }
+
+/* Rating row */
+.recipe-meta-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+    font-size:12px;
+    color:#F2F2F2;
+    opacity: .95;
+    flex-wrap: nowrap; 
+}
+
+/* Stars */
+.stars{
+  letter-spacing: 1px;       /* was 2px – tighter so it fits */
+  white-space: nowrap;
+}
+.star  { color:#B78701; }            /* gold! */
+
+/* Time */
+.time-icon{
+  width:14px; height:14px;
+  color:#B0B0B0;
+  margin-right:4px;
+  flex: 0 0 auto;            /* don’t shrink */
+}
+.prep{ display:flex; align-items:center; opacity:.95; white-space: nowrap;}
+
+/* favorites */
+.favorite-btn {
+  position: absolute; top: 8px; right: 8px;
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.2); background: rgba(0,0,0,.35);
+  color: #F66; cursor: pointer; display:flex; align-items:center; justify-content:center;
+}
+.favorite-btn.on { background: rgba(255,0,80,.15); border-color: rgba(255,80,120,.45); }
+
+/* Tag chips — MacroMunch styling */
+.tag-chip {
+  font-size: 12px;                  /* caption text style */
+  font-weight: 300;
+  font-family: 'Roboto', sans-serif;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: #1E1E1E;             /* dark base */
+  color: #F2F2F2;                  /* light text */
+  border: 1px solid #6A5AE0;       /* branded purple border */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.tag-chip.diet { border-color: #B1A8FF; }
+</style>

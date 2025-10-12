@@ -1,0 +1,47 @@
+@using MacroMunch.Models
+
+<div class="recipe-card" @onclick="() => OnSelect.InvokeAsync(Item)">
+  <div class="recipe-card-tag">
+    @if (Item.DietaryTags?.Count > 0)
+    {
+      <TagChip Text="@Item.DietaryTags[0]" Kind="diet" />
+    }
+  </div>
+
+  <img src="@Item.ImageUrl" alt="@Item.Name" class="recipe-card-img" />
+
+  <div class="recipe-card-overlay">
+    <div class="recipe-card-title">@Item.Name</div>
+
+    <div class="recipe-meta-row">
+        <span class="stars" aria-label="@($"{Item.Rating:0.0} stars")">
+            @for (var i = 0; i < 5; i++)
+            {
+            <span class="star">★</span>
+            }
+        </span>
+
+        <span class="prep">
+            <svg class="time-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2" />
+            <path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            @Item.PrepTime min
+        </span>
+    </div>
+  </div>
+
+  <button type="button"
+          class="favorite-btn @(Item.IsFavorite ? "on" : null)"
+          @onclick:stopPropagation="true"
+          @onclick="ToggleFavorite">
+    ♥
+  </button>
+</div>
+
+@code {
+  [Parameter] public Recipe Item { get; set; } = new();
+  [Parameter] public EventCallback<Recipe> OnSelect { get; set; }
+  [Parameter] public EventCallback<Recipe> OnToggleFavorite { get; set; }
+  private Task ToggleFavorite() => OnToggleFavorite.InvokeAsync(Item);
+}

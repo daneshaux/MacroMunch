@@ -1,0 +1,11 @@
+@* Displays 0..5 stars (no half-stars yet; simple & safe) *@
+<span class="stars">
+    @for (int i = 1; i <= 5; i++)
+    {
+        <span class="star">@((i <= Math.Round(Value)) ? "★" : "☆")</span>
+    }
+</span>
+
+@code {
+    [Parameter] public double Value { get; set; } = 0;
+}

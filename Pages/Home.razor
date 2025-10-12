@@ -1,0 +1,406 @@
+@page "/home"
+@using System.Text.Json
+@inject IJSRuntime JS
+
+<div class="header-bar-home">
+    <img src="@headerAvatarUrl" alt="User profile" class="profile-pic" />
+    <h3 class="h5 header-title">Home</h3>
+</div>
+
+<div class="app-wrapper">
+    <div class="home-container">
+
+        @if (isLoading)
+        {
+            <!-- ⏳ Loading state -->
+            <div class="empty-state">
+                <p class="h5 loading-text">✨ Preparing your plan…</p>
+            </div>
+        }
+        else if (mealPlan == null || mealPlan.Count == 0)
+        {
+            <!-- 🩵 Empty state -->
+            <div class="empty-state">
+                <h2 class="h2">Hi @userFirstName,</h2>
+                <p class="h5">You haven’t created a meal plan yet!</p>
+                <button class="primary-btn" @onclick="CreateMealPlan">
+                    Create my meal plan
+                </button>
+            </div>
+        }
+        else
+        {
+            <!-- 🍽️ Populated meal plan -->
+            <div class="welcome-section">
+            <div class="welcome-header">
+                <div>
+                    <h2 class="h2">Hi @userFirstName,</h2>
+                    <p class="h5">Enjoy your meal plan!</p>
+                </div>
+                <button class="new-plan-btn" @onclick="RegeneratePlan">↻ New Plan</button>
+            </div>
+
+            @if (mealPlan.Any())
+            {
+                <div class="summary-header">
+                    <h6 class="h6">Daily Summaries</h6>
+                    <span class="kcal-total">@($"{totalCalories:N0} kcal")</span>
+                </div>
+            }
+
+            <div class="summary-row">
+                <div class="summary-card">
+                    <div class="h6 bold">@proteinTotal g</div>
+                    <div class="caption">Protein</div>
+                </div>
+                <div class="summary-card">
+                    <div class="h6 bold">@carbsTotal g</div>
+                    <div class="caption">Carbs</div>
+                </div>
+                <div class="summary-card">
+                    <div class="h6 bold">@fatTotal g</div>
+                    <div class="caption">Fat</div>
+                </div>
+            </div>
+        </div>
+
+            <div class="meal-cards">
+                @foreach (var meal in mealPlan)
+                {
+                    <div class="meal-card">
+                        <div class="meal-top-row">
+                        <span class="meal-type">@meal.Type</span>
+
+                        <div class="meta-col">
+                            <span class="calories">@meal.Calories kcal</span>
+                            <div class="tag-row">
+                            @foreach (var t in GetDisplayTags(meal))
+                            {
+                                <span class="tag @t.cls">@t.tag</span>
+                            }
+                            </div>
+                        </div>
+                        </div>
+
+                        <img src="@meal.ImageUrl" alt="@meal.Name" class="meal-image" />
+
+                        <div class="meal-name h5">@meal.Name</div>
+
+                        <div class="macro-row">
+                            <div class="macro-group">
+                                <span>@meal.Protein g</span>
+                                <span>Pro</span>
+                            </div>
+                            <div class="macro-group">
+                                <span>@meal.Carbs g</span>
+                                <span>Carb</span>
+                            </div>
+                            <div class="macro-group">
+                                <span>@meal.Fat g</span>
+                                <span>Fat</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<div class="nav-wrapper">
+  <div class="bottom-nav">
+    <img src="images/icons/recipes.svg" alt="Recipes"
+         class="@RecipesClass" @onclick="GoRecipes" />
+
+    <img src="images/icons/home.svg" alt="Home"
+         class="@HomeClass" @onclick="GoHome" />
+
+    <img src="images/icons/profile.svg" alt="Profile"
+         class="@ProfileClass" @onclick="GoProfile" />
+  </div>
+</div>
+
+
+@code {
+    private List<Meal> mealPlan = new();
+    private bool isLoading = true;
+
+    [Inject] NavigationManager NavigationManager { get; set; } = default!;
+
+    private string activePage = "home";
+
+    // Computed classes (no literals in markup)
+    string HomeClass => activePage == "home" ? "nav-icon active" : "nav-icon";
+    string RecipesClass => activePage == "recipes" ? "nav-icon active" : "nav-icon";
+    string ProfileClass => activePage == "profile" ? "nav-icon active" : "nav-icon";
+
+    // Click handlers
+    void GoRecipes() => NavigationManager.NavigateTo("/recipes");
+    void GoHome() => NavigationManager.NavigateTo("/home");
+    void GoProfile() => NavigationManager.NavigateTo("/profile");
+    
+
+    void SetActivePage(string page)
+    {
+        activePage = page;
+        NavigationManager.NavigateTo($"/{page}");
+    }
+
+    private string headerAvatarUrl = "images/profile.png";
+
+    // Totals shown in Daily Summaries
+    private int proteinTotal, carbsTotal, fatTotal, totalCalories;
+
+    private void UpdateTotals()
+    {
+        proteinTotal = mealPlan.Sum(m => m.Protein);
+        carbsTotal   = mealPlan.Sum(m => m.Carbs);
+        fatTotal     = mealPlan.Sum(m => m.Fat);
+        totalCalories = mealPlan.Sum(m => m.Calories);
+    }
+
+    private void RegeneratePlan()
+    {
+        // TODO: call your generator / Firebase function here, then:
+        // mealPlan = newPlan;
+        UpdateTotals();
+        StateHasChanged();
+    }
+
+    private void EnsureDemoTags()
+    {
+        foreach (var m in mealPlan)
+        {
+            if (m.DietaryTags == null || m.DietaryTags.Count == 0)
+                m.DietaryTags = new List<string> { "Vegan" };     // demo
+
+            if (m.StyleTags == null || m.StyleTags.Count == 0)
+                m.StyleTags = new List<string> { "Kosher" };      // demo
+
+            if (string.IsNullOrWhiteSpace(m.SpiceLevel))
+                m.SpiceLevel = "Mild";                            // demo
+        }
+    }
+
+    IEnumerable<(string tag, string cls)> GetDisplayTags(Meal m)
+    {
+        if (m.DietaryTags?.Any() == true) yield return (m.DietaryTags[0], "diet");
+        if (m.StyleTags?.Any() == true)   yield return (m.StyleTags[0],   "style");
+        if (!string.IsNullOrWhiteSpace(m.SpiceLevel)) yield return (m.SpiceLevel!, "spice");
+    }
+
+    private string userFirstName = "there"; // fallback default
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Fetch user first name from localStorage
+        var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "userFirstName");
+        if (!string.IsNullOrWhiteSpace(storedName))
+        {
+            userFirstName = storedName;
+        }
+
+        var mealPlanJson = await JS.InvokeAsync<string>("firebaseInterop.getMealPlan", "testUserId");
+
+        if (!string.IsNullOrWhiteSpace(mealPlanJson))
+        {
+            try
+            {
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                // ✅ Deserialize first
+                mealPlan = JsonSerializer.Deserialize<List<Meal>>(mealPlanJson, options) ?? new();
+
+                // ✅ Ensure demo tags exist
+                EnsureDemoTags();
+
+                // ✅ Then update totals
+                UpdateTotals();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to parse meal plan JSON: " + ex.Message);
+            }
+        }
+
+        // Fetch avatar URL from localStorage
+        var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "userAvatarUrl");
+        if (!string.IsNullOrWhiteSpace(storedAvatar))
+            headerAvatarUrl = storedAvatar;
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private void CreateMealPlan()
+    {
+        // Navigate to your meal plan setup page (replace with your actual route)
+        NavigationManager.NavigateTo("/setup");
+    }
+
+    public class Meal
+    {
+        public string Type { get; set; } = "";
+        public string ImageUrl { get; set; } = "";
+        public string Name { get; set; } = "";
+        public int Calories { get; set; }
+        public int Protein { get; set; }
+        public int Carbs { get; set; }
+        public int Fat { get; set; }
+
+        public List<string> DietaryTags { get; set; } = new(); // e.g., Vegan, Keto, Gluten-Free
+        public List<string> StyleTags { get; set; } = new();   // e.g., Mediterranean, Soul Food
+        public string? SpiceLevel { get; set; }                 // e.g., Mild, Medium, Spicy
+        }
+}
+
+<style>
+    .welcome-section {
+        margin: 24px 0 16px 0;
+        text-align: left !important;
+        width: 100%;
+        color: #F2F2F2
+    }
+
+    .welcome-section .h2 {
+        margin-bottom: 8px;
+    }
+
+    .welcome-section .h5 {
+        margin-top: 0;
+    }
+
+    .welcome-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+    }
+
+    .new-plan-btn {
+        background: transparent;
+        color: #F2F2F2;
+        border: 1.5px solid #F2F2F2;
+        border-radius: 12px;
+        padding: 6px 12px;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .summary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        color: #F2F2F2;
+        margin-bottom: 8px;
+    }
+
+    /* place tags under kcal, aligned right */
+    .meal-top-row { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; 
+    margin-bottom: 12px; /* you already had this – keep it */
+    }
+
+    .meta-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    }
+
+    /* compact pills */
+    .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+    }
+
+    .tag {
+    font-family: 'Roboto', sans-serif;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background-color: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #F2F2F2;
+    white-space: nowrap;
+    }
+
+    /* subtle category accents (optional) */
+    .tag.diet  { border-color: #B1A8FF; }  /* lilac */
+    .tag.style { border-color: #FFB878; }  /* warm peach */
+    .tag.spice { border-color: #FF7A7A; }  /* gentle red */
+
+    .kcal-total {
+        font-family: 'Roboto', sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        color: #B0B0B0;
+        opacity: 0;
+        animation: fadeIn 0.8s ease-in forwards;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .summary-card {
+        flex: 1;
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1.5px solid #B1A8FF;
+        border-radius: 12px;
+        text-align: center;
+        padding: 12px 0;
+    }
+
+    /* Keep global .h6 / .caption as-is; tweak only inside cards */
+        .summary-card .h6 { 
+        font-weight: 700;           /* bold number */
+        color: #F2F2F2;
+    }
+
+    .summary-card .caption {
+        margin: 0;                  /* remove big global margin */
+        color: #F2F2F2;             /* readable on dark */
+        opacity: 0.85;
+    }
+
+        /* “Daily Summaries” heading color */
+        .welcome-section .h6 {
+        color: #F2F2F2;
+        margin-bottom: 8px;
+    }
+
+    .summary-card .bold {
+        font-weight: 700;
+    }
+
+    .loading-text {
+        color: #F2F2F2;
+        opacity: 0.85;
+        text-align: center;
+        animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    @@keyframes shimmer {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+    }
+</style>

@@ -1,0 +1,76 @@
+@page "/dietary-preferences"
+
+   <div class="header-bar">
+    <span class="back-arrow">←</span>
+    <h3 class="h5 header-title">Finish signing up</h3>
+</div>
+
+<div class="goal-selection-container">
+
+    <h2 class="h2">Dietary Preferences</h2>
+
+    <div class="card-grid">
+        @foreach (var option in dietaryOptions)
+        {
+            <div class="diet-card @(selectedOptions.Contains(option) ? "selected" : "")"
+            style="background-image: url('@dietaryImages[option]');"
+            @onclick="() => ToggleOption(option)">
+            <div class="card-overlay">@option</div>
+        </div>
+        }
+    </div>
+
+    <button class="primary-btn" style="margin-top: 40px;" @onclick="Continue">
+        Continue
+    </button>
+</div>
+
+@code {
+    private List<string> dietaryOptions = new() {
+        "Vegetarian", "Vegan", "Pescatarian", "Pescavegan",
+        "Keto", "Plant-Based-ish", "Paleo", "Mediterranean",
+        "Gluten-Free", "Dairy-Free"
+    };
+
+    private Dictionary<string, string> dietaryImages = new()
+    {
+        { "Vegetarian", "images/dietary/vegetarian.png" },
+        { "Vegan", "images/dietary/vegan.png" },
+        { "Pescatarian", "images/dietary/pescatarian.png" },
+        { "Pescavegan", "images/dietary/pescavegan.png" },
+        { "Keto", "images/dietary/keto.png" },
+        { "Plant-Based-ish", "images/dietary/plantbased.png" },
+        { "Paleo", "images/dietary/paleo.png" },
+        { "Mediterranean", "images/dietary/mediterranean.png" },
+        { "Gluten-Free", "images/dietary/glutenfree.png" },
+        { "Dairy-Free", "images/dietary/dairyfree.png" }
+    };
+
+    private HashSet<string> selectedOptions = new();
+
+    private void ToggleOption(string option)
+    {
+        if (selectedOptions.Contains(option))
+            selectedOptions.Remove(option);
+        else
+            selectedOptions.Add(option);
+    }
+
+    private async Task Continue()
+    {
+        var userId = "testUserId"; // Replace with real user ID
+        var selectedList = selectedOptions.ToList();
+
+        await JS.InvokeVoidAsync("firebaseInterop.saveDietaryPreferences", userId, selectedList);
+
+        NavigationManager!.NavigateTo("/allergies");
+    }
+
+    private void GoBack()
+    {
+        NavigationManager!.NavigateTo("/manual-entry");
+    }
+
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

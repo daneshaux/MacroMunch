@@ -1,0 +1,40 @@
+@page "/setup"
+
+<div class="header-bar">
+    <span class="back-arrow">←</span>
+    <h3 class="h5 header-title">Finish signing up</h3>
+</div>
+
+<div class="goal-selection-container">
+    <h2 class="h2">What’s your goal?</h2>
+
+    <div class="goal-options">
+        <button class="goal-btn @GetButtonClass("lose")" @onclick="@(() => SelectGoal("lose"))">Lose weight</button>
+        <button class="goal-btn @GetButtonClass("maintain")" @onclick="@(() => SelectGoal("maintain"))">Maintain</button>
+        <button class="goal-btn @GetButtonClass("gain")" @onclick="@(() => SelectGoal("gain"))">Gain muscle</button>
+    </div>
+
+    <a class="manual-link" href="/manual-entry">Manually enter my macros</a>
+</div>
+
+@code {
+    private string? selectedGoal;
+    private string userId = "testUserId"; // Replace with actual user ID
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+
+    async void SelectGoal(string goal)
+    {
+        selectedGoal = goal;
+        StateHasChanged(); // show pressed state
+        await JS.InvokeVoidAsync("firebaseInterop.saveUserGoal", userId, goal);
+        await Task.Delay(400); // small delay for button highlight
+        NavigationManager!.NavigateTo("/dietary-preferences");
+    }
+
+    string GetButtonClass(string goal)
+    {
+        return selectedGoal == goal ? "goal-btn selected" : "goal-btn";
+    }
+}

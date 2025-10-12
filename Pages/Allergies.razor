@@ -1,0 +1,73 @@
+@page "/allergies"
+@inject IJSRuntime JS
+
+<div class="header-bar">
+    <span class="back-arrow" @onclick="GoBack">←</span>
+    <h3 class="h5 header-title">Finish signing up</h3>
+</div>
+
+<div class="goal-selection-container">
+    <h2 class="h2">Allergies?</h2>
+
+    <div class="card-grid">
+        @foreach (var allergy in allergyOptions)
+        {
+            <div class="diet-card @(selectedAllergies.Contains(allergy) ? "selected" : "")"
+                 style="background-image: url('@allergyImages[allergy]');"
+                 @onclick="() => ToggleAllergy(allergy)">
+                <div class="card-overlay">@allergy</div>
+            </div>
+        }
+    </div>
+
+    <button class="primary-btn" style="margin-top: 40px;" @onclick="Continue">
+        Continue
+    </button>
+</div>
+
+@code {
+    private List<string> allergyOptions = new()
+    {
+        "Shellfish", "Peanuts", "Treenuts", "Lactose", "Gluten", "Eggs", "Fish", "Soy"
+    };
+
+    private HashSet<string> selectedAllergies = new();
+
+    private Dictionary<string, string> allergyImages = new()
+    {
+        { "Shellfish", "images/allergies/shellfish.png" },
+        { "Peanuts", "images/allergies/peanuts.png" },
+        { "Treenuts", "images/allergies/treenuts.png" },
+        { "Lactose", "images/allergies/lactose.png" },
+        { "Gluten", "images/allergies/gluten.png" },
+        { "Eggs", "images/allergies/eggs.png" },
+        { "Fish", "images/allergies/fish.png" },
+        { "Soy", "images/allergies/soy.png" }
+    };
+
+    private string userId = "testUserId"; // Replace with real user ID
+
+    private async Task Continue()
+    {
+        // Save to Firebase
+        await JS.InvokeVoidAsync("firebaseInterop.saveAllergies", userId, selectedAllergies.ToList());
+
+        // Navigate to the next screen
+        NavigationManager!.NavigateTo("/eating-styles");
+    }
+
+    private void ToggleAllergy(string allergy)
+    {
+        if (selectedAllergies.Contains(allergy))
+            selectedAllergies.Remove(allergy);
+        else
+            selectedAllergies.Add(allergy);
+    }
+
+    private void GoBack()
+    {
+        NavigationManager!.NavigateTo("/dietary-preferences");
+    }
+
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+}

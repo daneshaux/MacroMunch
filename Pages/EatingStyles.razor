@@ -1,0 +1,76 @@
+@page "/eating-styles"
+@inject IJSRuntime JS
+
+<div class="header-bar">
+    <span class="back-arrow" @onclick="GoBack">←</span>
+    <h3 class="h5 header-title">Finish signing up</h3>
+</div>
+
+<div class="goal-selection-container">
+    <h2 class="h2">Do any of these reflect your eating style?</h2>
+
+    <div class="card-grid">
+        @foreach (var style in eatingStyleOptions)
+        {
+            <div class="diet-card @(selectedStyles.Contains(style) ? "selected" : "")"
+                 style="background-image: url('@eatingStyleImages[style]');"
+                 @onclick="() => ToggleStyle(style)">
+                <div class="card-overlay">@style</div>
+            </div>
+        }
+    </div>
+
+    <button class="primary-btn" style="margin-top: 40px;" @onclick="Continue">
+        Continue
+    </button>
+</div>
+
+@code {
+    private List<string> eatingStyleOptions = new()
+    {
+        "Halal", "Kosher", "Asian-inspired", "Latin-American", "Italian",
+        "Soul food", "Indian", "American", "Korean", "Island-inspired"
+    };
+
+    private HashSet<string> selectedStyles = new();
+
+    private Dictionary<string, string> eatingStyleImages = new()
+    {
+        { "Halal", "images/eatingstyles/halal.png" },
+        { "Kosher", "images/eatingstyles/kosher.png" },
+        { "Asian-inspired", "images/eatingstyles/asian.png" },
+        { "Latin-American", "images/eatingstyles/latin.png" },
+        { "Italian", "images/eatingstyles/italian.png" },
+        { "Soul food", "images/eatingstyles/soul.png" },
+        { "Indian", "images/eatingstyles/indian.png" },
+        { "American", "images/eatingstyles/american.png" },
+        { "Korean", "images/eatingstyles/korean.png" },
+        { "Island-inspired", "images/eatingstyles/island.png" }
+    };
+
+    private string userId = "testUserId"; // Replace with real user ID!
+
+    private async Task Continue()
+    {
+        // Save to Firebase
+        await JS.InvokeVoidAsync("firebaseInterop.saveEatingStyles", userId, selectedStyles.ToList());
+
+        // Navigate to the next screen
+        NavigationManager!.NavigateTo("/spice-level");
+    }
+
+    private void ToggleStyle(string style)
+    {
+        if (selectedStyles.Contains(style))
+            selectedStyles.Remove(style);
+        else
+            selectedStyles.Add(style);
+    }
+
+    private void GoBack()
+    {
+        NavigationManager!.NavigateTo("/allergies");
+    }
+
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+}

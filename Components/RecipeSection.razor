@@ -1,0 +1,51 @@
+@using MacroMunch.Models
+
+<div class="recipe-section">
+    <div class="section-header">
+        <h5>@Title</h5>
+        <button class="view-all">
+            <span>View all</span>
+            <img src="images/icons/chevron.svg" alt="" class="chevron-icon" />
+        </button>
+    </div>
+
+    <div class="recipe-row">
+        @foreach (var r in Items ?? Enumerable.Empty<Recipe>())
+        {
+            <RecipeCard Item="r"
+                        OnSelect="OnSelect"
+                        OnToggleFavorite="OnToggleFavorite" />
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public IEnumerable<Recipe>? Items { get; set; }
+    [Parameter] public bool ShowViewAll { get; set; } = true;
+
+    [Parameter] public EventCallback OnViewAll { get; set; }
+    [Parameter] public EventCallback<Recipe> OnSelect { get; set; }
+    [Parameter] public EventCallback<Recipe> OnToggleFavorite { get; set; }
+}
+
+<style>
+.view-all {
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #F2F2F2;
+  font-size: 13px;          /* caption size */
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.chevron-icon {
+  width: 12px;
+  height: 12px;
+  transform: translateY(1px); /* optical centering */
+}
+</style>

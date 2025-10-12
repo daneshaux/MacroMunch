@@ -1,0 +1,56 @@
+﻿@page "/"
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<div class="welcome-container">
+    <img src="images/logo.png" alt="MacroMunch logo" class="logo" />
+
+    <p class="caption">Delicious macro-friendly meals, made for <em>you</em>.</p>
+
+    <div class="form-wrapper">
+        <h3 class="h3">Log in or sign up</h3>
+
+        <input class="email-input" placeholder="Enter your email" @bind="email" />
+
+        <button class="primary-btn" @onclick="SaveEmailAndContinue">
+            Continue
+        </button>
+
+        <div class="divider">or</div>
+
+        <button class="secondary-btn">
+            <i class="fab fa-google"></i> Continue with Google
+        </button>
+
+        <button class="secondary-btn">
+            <i class="fab fa-apple"></i> Continue with Apple
+        </button>
+
+        <button class="secondary-btn">
+            <i class="fab fa-facebook-f"></i> Continue with Facebook
+        </button>
+    </div>
+</div>
+
+@code {
+    private string email = "";
+    private string userId = "testUserId"; // Replace with actual user ID
+
+    private async Task SaveEmailAndContinue()
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            Console.WriteLine("Email is required.");
+            return;
+        }
+
+        // Save email to Firebase
+        await JS.InvokeVoidAsync("firebaseInterop.saveUserEmail", userId, email);
+
+        // Save email to local storage for pre-filling
+        await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
+
+        // Navigate to next screen
+        NavigationManager.NavigateTo("/userinfo");
+    }
+}
