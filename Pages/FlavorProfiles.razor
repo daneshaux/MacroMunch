@@ -52,9 +52,9 @@
         NavigationManager!.NavigateTo("/loading");
     }
 
-    private void GoBack()
+    private async Task GoBack()
     {
-        NavigationManager!.NavigateTo("/spice-level");
+        await JS.InvokeVoidAsync("history.back");
     }
 
     [Inject] private NavigationManager? NavigationManager { get; set; }

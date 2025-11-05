@@ -67,9 +67,9 @@
             selectedStyles.Add(style);
     }
 
-    private void GoBack()
+    private async Task GoBack()
     {
-        NavigationManager!.NavigateTo("/allergies");
+        await JS.InvokeVoidAsync("history.back");
     }
 
     [Inject] private NavigationManager? NavigationManager { get; set; }
