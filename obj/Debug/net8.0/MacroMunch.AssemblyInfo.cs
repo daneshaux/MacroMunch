@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MacroMunch")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e05521d8b21868d1d8e2404a73790cc72896ffc8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+63b5422f5e1a15c7933b7f0339af99d58fb5de8d")]
 [assembly: System.Reflection.AssemblyProductAttribute("MacroMunch")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MacroMunch")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

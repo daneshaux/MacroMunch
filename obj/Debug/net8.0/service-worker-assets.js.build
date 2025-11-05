@@ -1,7 +1,7 @@
 ﻿self.assetsManifest = {
   "assets": [
     {
-      "hash": "sha256-ory3MCvpT3FGtD8Dmu6dwYFdsRddIMv5wEYVnXZqj6M=",
+      "hash": "sha256-LxyH8iFY2+oeVYV7K0t5V6Ni9ms2MFUSW\/9KdjXKN4g=",
       "url": "css\/app.css"
     },
     {
@@ -265,7 +265,7 @@
       "url": "index.html"
     },
     {
-      "hash": "sha256-5fd8CfN\/pv+z+rmpkZDQP4+iJdmIKJNAKcp2ZqrP9SI=",
+      "hash": "sha256-Bzb2po7uRXZTLACZVLjtydRZyG4nVKTe4YumC2\/\/fKI=",
       "url": "manifest.webmanifest"
     },
     {
@@ -1081,17 +1081,17 @@
       "url": "_framework\/icudt_no_CJK.dat"
     },
     {
-      "hash": "sha256-5APdk3WbwZ5XRsN\/Rza5SkPpR5tJL3lF3ZDSWPFHkrQ=",
+      "hash": "sha256-+\/yEOF9DraB6plD\/KYQxYcZP6UqBMaYrICZuUMIFZ8M=",
       "url": "_framework\/MacroMunch.wasm"
     },
     {
-      "hash": "sha256-oCBTEIkZwWH+PtClRlf1cEjlU+KmOy0PV9R+xyepQH0=",
+      "hash": "sha256-VVkXpK242d+ZBI32Zc1qjPe\/ou\/5M\/C7ujZXIsvea+w=",
       "url": "_framework\/MacroMunch.pdb"
     },
     {
-      "hash": "sha256-wwUt5hxBcsqWAzFWdUg2loU0c9t+rWTfNlsuozKMYzg=",
+      "hash": "sha256-kai2YzRuvQMe2AQd8\/sRl7wPiSJV8+ck1e\/Jcnw2CWM=",
       "url": "_framework\/blazor.boot.json"
     }
   ],
-  "version": "dGiZALWg"
+  "version": "jYNUTo37"
 };

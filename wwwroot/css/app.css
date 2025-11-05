@@ -1,3 +1,9 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #0F0F0F;
+}
+
 /* Reset */
 * {
     margin: 0;
@@ -87,10 +93,11 @@ input, button {
 .form-wrapper {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;     /* full-width inputs inside */
     padding: 0 16px;
     width: 100%;
-    max-width: 100%;
+    max-width: none;         /* your new width */
+    margin: 0 auto;           /* centers it horizontally */
     box-sizing: border-box;
 }
 
@@ -109,8 +116,8 @@ input, button {
     background-color: #0F0F0F;
     color: #B0B0B0;
     font-size: 16px;
-    width: 100%;
-    max-width: 320px;
+    width: 100%;            /* matches parent width cleanly */
+    max-width: none;        /* let parent handle width now */
     margin-bottom: 16px;
     box-sizing: border-box;
     display: block;
@@ -126,7 +133,7 @@ input, button {
     border-radius: 12px;
     cursor: pointer;
     width: 100%;
-    max-width: 320px;
+    max-width: none;
     margin-bottom: 32px;
 }
 
@@ -151,7 +158,7 @@ input, button {
     border-radius: 10px;
     cursor: pointer;
     width: 100%;
-    max-width: 320px;
+    max-width: none;
     margin-bottom: 16px;
 }
 
@@ -201,7 +208,7 @@ input, button {
     transition: background-color 0.2s ease, transform 0.1s ease;
     cursor: pointer;
     width: 100%;
-    max-width: 320px;
+    max-width: none;
 }
 
 .goal-btn.selected {
@@ -253,24 +260,25 @@ input, button {
 .user-info-form {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;   /* inputs align full-width, not centered */
     padding: 0 16px;
     width: 100%;
-    max-width: 100%;
+    max-width: none;
     box-sizing: border-box;
+    margin: 0 auto;         /* centers the entire form */
     margin-top: 40px;
 }
 
 .password-wrapper {
     position: relative;
     width: 100%;
-    max-width: 320px;
+    max-width: none;
     margin-bottom: 16px;
     height: 52px; /* Match the height of the input */
 }
 
 .password-input {
-    padding: 14px 40px 14px 16px; /* make space for eye icon */
+    padding-right: 40px; /* make space for eye icon */
     border-radius: 10px;
     border: 1.5px solid #B0B0B0;
     background-color: #0F0F0F;
@@ -278,7 +286,7 @@ input, button {
     font-size: 16px;
     width: 100%;
     box-sizing: border-box;
-    max-width: 320px;
+    max-width: none;
 }
 
 .toggle-password {
@@ -303,7 +311,7 @@ input, button {
     grid-template-columns: repeat(2, 1fr);
     gap: 24px 16px;
     width: 100%;
-    max-width: 360px;
+    max-width: none;
 }
 
 .diet-card {
@@ -349,7 +357,7 @@ input, button {
 
 .slider-wrapper {
     width: 100%;
-    max-width: 320px;
+    max-width: none;
     margin-top: 40px;
     display: flex;
     flex-direction: column;
@@ -581,4 +589,14 @@ input, button {
     font-size: 1rem;
     opacity: 0.8;
     margin-bottom: 1.5rem;
+}
+
+/* Screen Wrapper */
+
+.screen-container {
+    width: 100%;
+    max-width: 430px;      /* or 390 if you prefer */
+    margin: 0 auto;
+    padding: 0 16px;
+    box-sizing: border-box;
 }
