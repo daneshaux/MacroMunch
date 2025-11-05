@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "MacroMunch",
   "resources": {
-    "hash": "sha256-masQkdTcFe9e0aR7TcCvtSTTbZVha2vRods16yBp8ck=",
+    "hash": "sha256-q0MSKnAH3DbzuPQPMb/WVTZGwWa4YqZP/eg2bK04NMY=",
     "jsModuleNative": {
       "dotnet.native.8.0.16.mk5fugbqj2.js": "sha256-RiGT44TFZmHOY+Oqvb8o8r+BJVWex6+dPxFxrOiWvFY="
     },
@@ -208,10 +208,10 @@
       "mscorlib.wasm": "sha256-Im6xq+lOse4P/VnAyrA3hwPstV67V5dB0EwQWcjipyE=",
       "netstandard.wasm": "sha256-PK0GLtj6kQVtZPzq0FZlnSdHh7geujg80LqKdJXA4pI=",
       "System.Private.CoreLib.wasm": "sha256-gEwccs7GbRSPGmeWBOKxNroYfyM+mZ7hqbP3ki1iwX0=",
-      "MacroMunch.wasm": "sha256-P4T92MHZuJjiY0aiTngfwgWc7pOO4alFKhEvQMJEXfI="
+      "MacroMunch.wasm": "sha256-+/yEOF9DraB6plD/KYQxYcZP6UqBMaYrICZuUMIFZ8M="
     },
     "pdb": {
-      "MacroMunch.pdb": "sha256-dNIGZG3BYaUi9u1304fROCri2kq3bXXZmN7TILMI4LE="
+      "MacroMunch.pdb": "sha256-VVkXpK242d+ZBI32Zc1qjPe/ou/5M/C7ujZXIsvea+w="
     }
   },
   "cacheBootResources": true,

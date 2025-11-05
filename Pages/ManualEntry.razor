@@ -1,7 +1,7 @@
 @page "/manual-entry"
 
    <div class="header-bar">
-    <span class="back-arrow">←</span>
+    <span class="back-arrow" @onclick="GoBack">←</span>
     <h3 class="h5 header-title">Finish signing up</h3>
 </div>
 
@@ -45,8 +45,8 @@
         NavigationManager!.NavigateTo("/dietary-preferences");
     }
 
-    private void GoBack()
+    private async Task GoBack()
     {
-        NavigationManager!.NavigateTo("/goal-selection");
+        await JS.InvokeVoidAsync("history.back");
     }
 }

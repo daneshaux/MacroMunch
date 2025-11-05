@@ -3,44 +3,116 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
+
 <div class="header-bar">
     <span class="back-arrow" @onclick="GoBack">←</span>
     <h3 class="h5 header-title">Finish signing up</h3>
 </div>
 
+<div class="screen-container">
 <div class="form-wrapper user-info-form">
-    <input class="email-input" placeholder="First name" @bind="firstName" />
-    <div style="height: 4px;"></div>
-    <input class="email-input" placeholder="Last name" @bind="lastName" />
-    <div style="height: 24px;"></div>
-
-    <input class="email-input" placeholder="Birthday (MM/DD/YYYY)" @bind="birthday" />
-    <div style="height: 24px;"></div>
-
-    <input class="email-input" placeholder="Weight (lbs)" @bind="weight" />
-    <div style="height: 4px;"></div>
-    <input class="email-input" placeholder="Height (in)" @bind="height" />
-    <div style="height: 24px;"></div>
-
-    <select class="email-input" style="margin-top: 40px;" @bind="activityLevel">
-        <option value="">Select Activity Level</option>
-        <option value="1.2">Sedentary (little to no exercise)</option>
-        <option value="1.375">Lightly active (1-3 days/week)</option>
-        <option value="1.55">Moderately active (3-5 days/week)</option>
-        <option value="1.725">Very active (6-7 days/week)</option>
-        <option value="1.9">Extra active (very hard exercise/physical job)</option>
-    </select>
-    <div style="height: 24px;"></div>
-
-    <input class="email-input" placeholder="Email address" @bind="email" />
-    <div style="height: 24px;"></div>
-
-    <div class="password-wrapper">
-        <input class="email-input password-input" placeholder="Password" type="@passwordType" @bind="password" />
-        <button type="button" class="toggle-password" @onclick="TogglePassword">
-            @(passwordType == "password" ? "👁️" : "🙈")
-        </button>
+    <!-- Name -->
+    <div class="field-group">
+        <div class="body-text field-label">Name</div>
+        <input class="email-input" placeholder="First name" @bind="firstName" />
+        <div style="height: 4px;"></div>
+        <input class="email-input" placeholder="Last name" @bind="lastName" />
     </div>
+
+    <div style="height: 24px;"></div>
+
+    <!-- Date of Birth -->
+    <div class="field-group">
+        <div class="body-text field-label">Date of Birth</div>
+        <div class="dob-row">
+            <select class="email-input dob-select" @bind="birthMonth">
+                <option value="">MM</option>
+                <option value="01">01 - Jan</option>
+                <option value="02">02 - Feb</option>
+                <option value="03">03 - Mar</option>
+                <option value="04">04 - Apr</option>
+                <option value="05">05 - May</option>
+                <option value="06">06 - Jun</option>
+                <option value="07">07 - Jul</option>
+                <option value="08">08 - Aug</option>
+                <option value="09">09 - Sep</option>
+                <option value="10">10 - Oct</option>
+                <option value="11">11 - Nov</option>
+                <option value="12">12 - Dec</option>
+            </select>
+
+            <select class="email-input dob-select" @bind="birthDay">
+                <option value="">DD</option>
+                @for (int d = 1; d <= 31; d++)
+                {
+                    <option value="@d.ToString("00")">@d.ToString("00")</option>
+                }
+            </select>
+
+            <select class="email-input dob-select" @bind="birthYear">
+                <option value="">YYYY</option>
+                @for (int y = 1940; y <= 2010; y++)
+                {
+                    <option value="@y">@y</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    <div style="height: 24px;"></div>
+
+    <!-- Personal Info: Weight / Height / Activity -->
+    <div class="field-group">
+        <div class="body-text field-label">Personal Info</div>
+        <input class="email-input" placeholder="Weight (lbs)" @bind="weight" />
+        <div style="height: 4px;"></div>
+        <input class="email-input" placeholder="Height (in)" @bind="height" />
+        <div style="height: 16px;"></div>
+
+        <div class="body-text field-label" style="margin-bottom: 4px;">Activity Level</div>
+        <select class="email-input" @bind="activityLevel">
+            <option value="">Select Activity Level</option>
+            <option value="1.2">Sedentary (little to no exercise)</option>
+            <option value="1.375">Lightly active (1-3 days/week)</option>
+            <option value="1.55">Moderately active (3-5 days/week)</option>
+            <option value="1.725">Very active (6-7 days/week)</option>
+            <option value="1.9">Extra active (very hard exercise/physical job)</option>
+        </select>
+    </div>
+
+    <div style="height: 24px;"></div>
+
+    <!-- Account Info -->
+    <div class="field-group">
+        <div class="body-text field-label">Account Info</div>
+
+        <input class="email-input" placeholder="Email address" @bind="email" />
+        <div style="height: 4px;"></div>
+
+        <div class="password-wrapper">
+            <input class="email-input password-input"
+                placeholder="Password"
+                type="@passwordType"
+                @bind="password" />
+            <button type="button" class="toggle-password" @onclick="TogglePassword">
+                @(passwordType == "password" ? "👁️" : "🙈")
+            </button>
+        </div>
+
+        <div style="height: 4px;"></div>
+
+        <div class="password-wrapper">
+            <input class="email-input password-input"
+                placeholder="Confirm password"
+                type="@passwordType"
+                @bind="confirmPassword" />
+            <button type="button" class="toggle-password" @onclick="TogglePassword">
+                @(passwordType == "password" ? "👁️" : "🙈")
+            </button>
+        </div>
+    </div>
+
+    <div style="height: 24px;"></div>
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
@@ -52,16 +124,21 @@
     <button class="primary-btn" @onclick="SaveUserInfoAndContinue">
         Continue
     </button>
+    </div>
 </div>
 
 @code {
     private string firstName = "";
     private string lastName = "";
-    private string birthday = "";
+    private string birthDay = "";
+    private string birthMonth = "";
+    private string birthYear = "";
+    private string birthday = ""; // combined MM/DD/YYYY for saving
     private string weight = "";
     private string height = "";
     private string email = "";
     private string password = "";
+    private string confirmPassword = "";
     private string activityLevel = "";
     private string passwordType = "password";
     private string userId = "testUserId"; // Replace with real user ID
@@ -85,9 +162,10 @@
     private async Task SaveUserInfoAndContinue()
     {
         // Validation logic
-        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(birthday) ||
-            string.IsNullOrWhiteSpace(weight) || string.IsNullOrWhiteSpace(height) || string.IsNullOrWhiteSpace(activityLevel) ||
-            string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) ||
+        string.IsNullOrWhiteSpace(birthDay) || string.IsNullOrWhiteSpace(birthMonth) || string.IsNullOrWhiteSpace(birthYear) ||
+        string.IsNullOrWhiteSpace(weight) || string.IsNullOrWhiteSpace(height) || string.IsNullOrWhiteSpace(activityLevel) ||
+        string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(confirmPassword))
         {
             errorMessage = "All fields are required!";
             return;
@@ -107,10 +185,19 @@
             return;
         }
 
+        if (password != confirmPassword)
+        {
+            errorMessage = "Passwords must match.";
+            return;
+        }
+
+        // Build birthday as MM/DD/YYYY
+        birthday = $"{birthMonth}/{birthDay}/{birthYear}";
+
         // Clear error if all good
         errorMessage = "";
 
-        // Save to Firebase
+        // Save to Firebase (temporary until backend wired)
         await JS.InvokeVoidAsync(
             "firebaseInterop.saveUserInfo",
             userId,
@@ -146,11 +233,10 @@
         NavigationManager.NavigateTo("/home");
     }
 
-        // Go Back
-        private async Task GoBack()
-        {
-            await JS.InvokeVoidAsync("history.back");
-        }
+    private async Task GoBack()
+    {
+        await JS.InvokeVoidAsync("history.back");
+    }
 }
 
 <style>
@@ -161,9 +247,32 @@
         background: url('data:image/svg+xml;utf8,<svg fill="%23B0B0B0" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center;
         background-size: 16px;
     }
+
     .error-message {
         color: #FF6B6B;
         font-size: 14px;
         margin-top: 12px;
+    }
+
+    .field-label {
+        color: #4ADE80;
+        margin-bottom: 8px;
+        display: block;
+    }
+
+    .field-group {
+        width: 100%;
+    }
+
+    .dob-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    }
+
+    .dob-select {
+        flex: 1 1 0;
+        padding-right: 24px;
+        box-sizing: border-box;
     }
 </style>
