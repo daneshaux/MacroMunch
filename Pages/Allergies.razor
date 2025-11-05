@@ -64,9 +64,9 @@
             selectedAllergies.Add(allergy);
     }
 
-    private void GoBack()
+    private async Task GoBack()
     {
-        NavigationManager!.NavigateTo("/dietary-preferences");
+        await JS.InvokeVoidAsync("history.back");
     }
 
     [Inject] private NavigationManager? NavigationManager { get; set; }

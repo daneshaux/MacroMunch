@@ -45,9 +45,9 @@
         NavigationManager!.NavigateTo("/flavor-profiles");
     }
 
-    private void GoBack()
+    private async Task GoBack()
     {
-        NavigationManager!.NavigateTo("/eating-styles");
+        await JS.InvokeVoidAsync("history.back");
     }
 
     [Inject] private NavigationManager? NavigationManager { get; set; }
