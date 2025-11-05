@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/daneshawilliams/MacroMunch 2/MacroMunch.csproj": {}
+    "/Users/daneshawilliams/MacroMunch 2/MacroMunch/MacroMunch.csproj": {}
   },
   "projects": {
-    "/Users/daneshawilliams/MacroMunch 2/MacroMunch.csproj": {
+    "/Users/daneshawilliams/MacroMunch 2/MacroMunch/MacroMunch.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/daneshawilliams/MacroMunch 2/MacroMunch.csproj",
+        "projectUniqueName": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/MacroMunch.csproj",
         "projectName": "MacroMunch",
-        "projectPath": "/Users/daneshawilliams/MacroMunch 2/MacroMunch.csproj",
+        "projectPath": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/MacroMunch.csproj",
         "packagesPath": "/Users/daneshawilliams/.nuget/packages/",
-        "outputPath": "/Users/daneshawilliams/MacroMunch 2/obj/",
+        "outputPath": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/daneshawilliams/.nuget/NuGet/NuGet.Config"

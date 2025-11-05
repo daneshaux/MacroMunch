@@ -4,7 +4,7 @@
 @inject IJSRuntime JS
 
 <div class="header-bar">
-    <span class="back-arrow">←</span>
+    <span class="back-arrow" @onclick="GoBack">←</span>
     <h3 class="h5 header-title">Finish signing up</h3>
 </div>
 
@@ -145,6 +145,12 @@
         // Continue
         NavigationManager.NavigateTo("/home");
     }
+
+        // Go Back
+        private async Task GoBack()
+        {
+            await JS.InvokeVoidAsync("history.back");
+        }
 }
 
 <style>

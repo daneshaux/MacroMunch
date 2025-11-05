@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "L72K5QMzbYk=",
+  "dgSpecHash": "NSjfqp6jDUU=",
   "success": true,
-  "projectFilePath": "/Users/daneshawilliams/MacroMunch 2/MacroMunch.csproj",
+  "projectFilePath": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/MacroMunch.csproj",
   "expectedPackageFiles": [
     "/Users/daneshawilliams/.nuget/packages/microsoft.aspnetcore.authorization/8.0.16/microsoft.aspnetcore.authorization.8.0.16.nupkg.sha512",
     "/Users/daneshawilliams/.nuget/packages/microsoft.aspnetcore.components/8.0.16/microsoft.aspnetcore.components.8.0.16.nupkg.sha512",

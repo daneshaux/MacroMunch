@@ -12,45 +12,149 @@
 
         <input class="email-input" placeholder="Enter your email" @bind="email" />
 
-        <button class="primary-btn" @onclick="SaveEmailAndContinue">
-            Continue
-        </button>
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="error-message">@errorMessage</div>
+        }
 
-        <div class="divider">or</div>
+        @if (showPassword)
+        {
+            <div style="height: 16px;"></div>
 
-        <button class="secondary-btn">
-            <i class="fab fa-google"></i> Continue with Google
-        </button>
+            <input class="email-input"
+                   placeholder="Enter your password"
+                   type="password"
+                   @bind="password" />
 
-        <button class="secondary-btn">
-            <i class="fab fa-apple"></i> Continue with Apple
-        </button>
+            <div style="height: 16px;"></div>
 
-        <button class="secondary-btn">
-            <i class="fab fa-facebook-f"></i> Continue with Facebook
-        </button>
+            <button class="primary-btn" @onclick="SignInUser">
+                Sign in
+            </button>
+
+            <button class="secondary-btn" style="margin-top: 8px;" @onclick="ResetEmail">
+                Use a different email
+            </button>
+        }
+        else
+        {
+            <div style="height: 16px;"></div>
+
+            <button class="primary-btn" @onclick="SaveEmailAndContinue">
+                Continue
+            </button>
+
+            <div class="divider">or</div>
+
+            <button class="secondary-btn">
+                <i class="fab fa-google"></i> Continue with Google
+            </button>
+
+            <button class="secondary-btn">
+                <i class="fab fa-apple"></i> Continue with Apple
+            </button>
+
+            <button class="secondary-btn">
+                <i class="fab fa-facebook-f"></i> Continue with Facebook
+            </button>
+        }
     </div>
 </div>
 
 @code {
     private string email = "";
-    private string userId = "testUserId"; // Replace with actual user ID
+    private string password = "";
+    private string userId = "testUserId"; // Replace with actual user ID later
+    private string errorMessage = "";
+    private bool showPassword = false;
 
     private async Task SaveEmailAndContinue()
     {
+        errorMessage = "";
+
         if (string.IsNullOrWhiteSpace(email))
         {
-            Console.WriteLine("Email is required.");
+            errorMessage = "Email is required.";
             return;
         }
 
-        // Save email to Firebase
-        await JS.InvokeVoidAsync("firebaseInterop.saveUserEmail", userId, email);
+        // 🔹 TEMP: fake "user exists" logic for now
+        // Later, replace with a real Supabase / backend call.
+        bool userExists = await CheckIfUserExists(email);
 
-        // Save email to local storage for pre-filling
-        await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
+        if (userExists)
+        {
+            // Existing user → show password field on this same screen
+            showPassword = true;
 
-        // Navigate to next screen
-        NavigationManager.NavigateTo("/userinfo");
+            // Store email for later screens if needed
+            await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
+        }
+        else
+        {
+            // New user → send them to signup flow
+            await JS.InvokeVoidAsync("firebaseInterop.saveUserEmail", userId, email);
+            await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
+            NavigationManager.NavigateTo("/userinfo");
+        }
+    }
+
+    private async Task<bool> CheckIfUserExists(string email)
+    {
+        // TODO: Replace this with real Supabase check.
+        // For now, treat any @test.com email as an "existing" user to test the flow.
+        await Task.CompletedTask;
+        return email.EndsWith("@test.com", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task SignInUser()
+    {
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Please enter your password.";
+            return;
+        }
+
+        try
+        {
+            // 🧩 Step 1: Mock login check for testing
+            bool loginSuccessful = await CheckMockLogin(email, password);
+
+            if (!loginSuccessful)
+            {
+                errorMessage = "Invalid email or password.";
+                return;
+            }
+
+            // 🧩 Step 2: Pretend to get a JWT token
+            var fakeJwt = "test-jwt";
+            await JS.InvokeVoidAsync("localStorage.setItem", "jwt", fakeJwt);
+            await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
+
+            // 🧩 Step 3: Navigate to home page
+            NavigationManager.NavigateTo("/home");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Login failed: {ex.Message}";
+        }
+    }
+
+    // 👇🏾 Mock backend function for now
+    private async Task<bool> CheckMockLogin(string email, string password)
+    {
+        await Task.Delay(200); // Simulate network delay
+        // Allow any email ending in @test.com to log in with this password
+        return email.EndsWith("@test.com", StringComparison.OrdinalIgnoreCase) && password == "password123";
+    }
+
+    private void ResetEmail()
+    {
+        // Let the user change the email if we guessed wrong
+        showPassword = false;
+        password = "";
+        errorMessage = "";
     }
 }
