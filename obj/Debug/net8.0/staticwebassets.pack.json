@@ -1,295 +1,295 @@
 {
   "Files": [
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/bin/Debug/net8.0/wwwroot/_framework/blazor.webassembly.js",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/bin/Debug/net8.0/wwwroot/_framework/blazor.webassembly.js",
       "PackagePath": "staticwebassets/_framework/blazor.webassembly.js"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/obj/Debug/net8.0/compressed/aj8vjmzbkj.gz",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/obj/Debug/net8.0/compressed/aj8vjmzbkj.gz",
       "PackagePath": "staticwebassets/_framework/blazor.webassembly.js.gz"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/obj/Debug/net8.0/scopedcss/bundle/MacroMunch.styles.css",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/obj/Debug/net8.0/scopedcss/bundle/MacroMunch.styles.css",
       "PackagePath": "staticwebassets/MacroMunch.styles.css"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/obj/Debug/net8.0/service-worker-assets.js",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/obj/Debug/net8.0/service-worker-assets.js",
       "PackagePath": "staticwebassets/service-worker-assets.js"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/obj/Debug/net8.0/service-worker/service-worker.published.js",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/obj/Debug/net8.0/service-worker/service-worker.published.js",
       "PackagePath": "staticwebassets/service-worker.js"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/eggs.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/eggs.png",
       "PackagePath": "staticwebassets/Images/Allergies/eggs.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/fish.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/fish.png",
       "PackagePath": "staticwebassets/Images/Allergies/fish.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/gluten.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/gluten.png",
       "PackagePath": "staticwebassets/Images/Allergies/gluten.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/lactose.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/lactose.png",
       "PackagePath": "staticwebassets/Images/Allergies/lactose.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/peanuts.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/peanuts.png",
       "PackagePath": "staticwebassets/Images/Allergies/peanuts.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/shellfish.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/shellfish.png",
       "PackagePath": "staticwebassets/Images/Allergies/shellfish.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/soy.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/soy.png",
       "PackagePath": "staticwebassets/Images/Allergies/soy.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Allergies/treenuts.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Allergies/treenuts.png",
       "PackagePath": "staticwebassets/Images/Allergies/treenuts.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Categories/breakfast.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Categories/breakfast.svg",
       "PackagePath": "staticwebassets/Images/Categories/breakfast.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Categories/dinner.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Categories/dinner.svg",
       "PackagePath": "staticwebassets/Images/Categories/dinner.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Categories/lunch.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Categories/lunch.svg",
       "PackagePath": "staticwebassets/Images/Categories/lunch.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Categories/snack.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Categories/snack.svg",
       "PackagePath": "staticwebassets/Images/Categories/snack.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/dairyfree.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/dairyfree.png",
       "PackagePath": "staticwebassets/Images/Dietary/dairyfree.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/glutenfree.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/glutenfree.png",
       "PackagePath": "staticwebassets/Images/Dietary/glutenfree.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/keto.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/keto.png",
       "PackagePath": "staticwebassets/Images/Dietary/keto.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/mediterranean.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/mediterranean.png",
       "PackagePath": "staticwebassets/Images/Dietary/mediterranean.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/paleo.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/paleo.png",
       "PackagePath": "staticwebassets/Images/Dietary/paleo.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/pescatarian.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/pescatarian.png",
       "PackagePath": "staticwebassets/Images/Dietary/pescatarian.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/pescavegan.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/pescavegan.png",
       "PackagePath": "staticwebassets/Images/Dietary/pescavegan.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/plantbased.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/plantbased.png",
       "PackagePath": "staticwebassets/Images/Dietary/plantbased.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/vegan.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/vegan.png",
       "PackagePath": "staticwebassets/Images/Dietary/vegan.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Dietary/vegetarian.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Dietary/vegetarian.png",
       "PackagePath": "staticwebassets/Images/Dietary/vegetarian.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/american.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/american.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/american.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/asian.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/asian.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/asian.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/halal.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/halal.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/halal.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/indian.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/indian.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/indian.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/island.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/island.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/island.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/italian.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/italian.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/italian.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/korean.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/korean.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/korean.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/kosher.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/kosher.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/kosher.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/latin.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/latin.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/latin.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/EatingStyles/soul.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/EatingStyles/soul.png",
       "PackagePath": "staticwebassets/Images/EatingStyles/soul.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Flavor/creamy.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Flavor/creamy.png",
       "PackagePath": "staticwebassets/Images/Flavor/creamy.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Flavor/savory.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Flavor/savory.png",
       "PackagePath": "staticwebassets/Images/Flavor/savory.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Flavor/smoky.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Flavor/smoky.png",
       "PackagePath": "staticwebassets/Images/Flavor/smoky.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Flavor/sweet.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Flavor/sweet.png",
       "PackagePath": "staticwebassets/Images/Flavor/sweet.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Flavor/tangy.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Flavor/tangy.png",
       "PackagePath": "staticwebassets/Images/Flavor/tangy.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Flavor/umami.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Flavor/umami.png",
       "PackagePath": "staticwebassets/Images/Flavor/umami.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Icons/Heart.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Icons/Heart.svg",
       "PackagePath": "staticwebassets/Images/Icons/Heart.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Icons/Home.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Icons/Home.svg",
       "PackagePath": "staticwebassets/Images/Icons/Home.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Icons/Profile.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Icons/Profile.svg",
       "PackagePath": "staticwebassets/Images/Icons/Profile.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Icons/Recipes.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Icons/Recipes.svg",
       "PackagePath": "staticwebassets/Images/Icons/Recipes.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Icons/Search.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Icons/Search.svg",
       "PackagePath": "staticwebassets/Images/Icons/Search.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Icons/Swap.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Icons/Swap.svg",
       "PackagePath": "staticwebassets/Images/Icons/Swap.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Icons/chevron.svg",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Icons/chevron.svg",
       "PackagePath": "staticwebassets/Images/Icons/chevron.svg"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/acai-bowl.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/acai-bowl.png",
       "PackagePath": "staticwebassets/Images/Recipes/acai-bowl.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/beyond-chili.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/beyond-chili.png",
       "PackagePath": "staticwebassets/Images/Recipes/beyond-chili.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/chicken-salad.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/chicken-salad.png",
       "PackagePath": "staticwebassets/Images/Recipes/chicken-salad.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/mushroom-pasta.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/mushroom-pasta.png",
       "PackagePath": "staticwebassets/Images/Recipes/mushroom-pasta.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/mushroom-ravioli.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/mushroom-ravioli.png",
       "PackagePath": "staticwebassets/Images/Recipes/mushroom-ravioli.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/oat-bowl.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/oat-bowl.png",
       "PackagePath": "staticwebassets/Images/Recipes/oat-bowl.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/pancakes.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/pancakes.png",
       "PackagePath": "staticwebassets/Images/Recipes/pancakes.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/pb-ricecake.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/pb-ricecake.png",
       "PackagePath": "staticwebassets/Images/Recipes/pb-ricecake.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/raspberry-pops.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/raspberry-pops.png",
       "PackagePath": "staticwebassets/Images/Recipes/raspberry-pops.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/salmon-bowl.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/salmon-bowl.png",
       "PackagePath": "staticwebassets/Images/Recipes/salmon-bowl.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/Recipes/salmon-veggies.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/salmon-veggies.png",
       "PackagePath": "staticwebassets/Images/Recipes/salmon-veggies.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/logo.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/logo.png",
       "PackagePath": "staticwebassets/Images/logo.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/Images/profile.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/profile.png",
       "PackagePath": "staticwebassets/Images/profile.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/css/app.css",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/css/app.css",
       "PackagePath": "staticwebassets/css/app.css"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/css/bootstrap/bootstrap.min.css",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/css/bootstrap/bootstrap.min.css",
       "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/css/bootstrap/bootstrap.min.css.map",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/css/bootstrap/bootstrap.min.css.map",
       "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css.map"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/favicon.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/favicon.png",
       "PackagePath": "staticwebassets/favicon.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/firebaseInterop.js",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/firebaseInterop.js",
       "PackagePath": "staticwebassets/firebaseInterop.js"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/icon-192.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/icon-192.png",
       "PackagePath": "staticwebassets/icon-192.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/icon-512.png",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/icon-512.png",
       "PackagePath": "staticwebassets/icon-512.png"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/index.html",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/index.html",
       "PackagePath": "staticwebassets/index.html"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/manifest.webmanifest",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/manifest.webmanifest",
       "PackagePath": "staticwebassets/manifest.webmanifest"
     },
     {
-      "Id": "/Users/daneshawilliams/MacroMunch 2/wwwroot/sample-data/weather.json",
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/sample-data/weather.json",
       "PackagePath": "staticwebassets/sample-data/weather.json"
     },
     {
