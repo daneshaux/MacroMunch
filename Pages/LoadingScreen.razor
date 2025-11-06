@@ -33,6 +33,7 @@
             // Short UX pause
             await Task.Delay(1000); // 1 second for smoother transition!
 
+            await JS.InvokeVoidAsync("localStorage.setItem", "dietOnboardingCompleted", "true");
             NavigationManager!.NavigateTo("/home");
         }
     }

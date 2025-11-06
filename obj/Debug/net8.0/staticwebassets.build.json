@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "/r+76uRpaEDjCSIIDg6jlksYmeq6MlJ4k7V9hRFxjkY=",
+  "Hash": "lci/yfbDgVYrdGzUHvrN2KAfkapvb0GTOXRnr+zBUtk=",
   "Source": "MacroMunch",
   "BasePath": "/",
   "Mode": "Root",
@@ -9173,6 +9173,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/sample-data/weather.json"
+    },
+    {
+      "Identity": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/supabaseInterop.js",
+      "SourceId": "MacroMunch",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/",
+      "BasePath": "/",
+      "RelativePath": "supabaseInterop.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/supabaseInterop.js"
     }
   ]
 }
