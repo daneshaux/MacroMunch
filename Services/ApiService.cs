@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -31,15 +32,21 @@ namespace MacroMunch.Services
             SetAuthHeader(jwt);
 
             var response = await _http.PostAsJsonAsync("/api/v1/users/", request);
+            var json = await response.Content.ReadAsStringAsync();
+
+            if (response.StatusCode == HttpStatusCode.Conflict)
+            {
+                // 409 = "user profile already exists"
+                Console.WriteLine("CreateUser: profile already exists, skipping create.");
+                return null; // treat as non-fatal
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                // TODO: better error handling
-                var error = await response.Content.ReadAsStringAsync();
-                Console.WriteLine("CreateUser error: " + error);
+                Console.WriteLine("CreateUser error: " + json);
                 return null;
             }
 
-            var json = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<CreateUserResponse>(json, options);
         }
@@ -80,6 +87,50 @@ namespace MacroMunch.Services
             var json = await response.Content.ReadAsStringAsync();
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             return JsonSerializer.Deserialize<CalculateMacrosResponse>(json, options);
+        }
+
+        // ------------- USER GOAL UPDATE -------------
+
+        public async Task<bool> UpdateUserGoalAsync(string jwt, string goal)
+        {
+            // Make sure Authorization header is set
+            SetAuthHeader(jwt);
+
+            // 1) Get the current user profile from the backend
+            var user = await GetCurrentUserAsync(jwt);
+            if (user == null)
+            {
+                Console.WriteLine("UpdateUserGoal: current user not found, cannot update goal.");
+                return false;
+            }
+
+            // 2) Build a full CreateUserRequest using existing values + new goal
+            var request = new CreateUserRequest
+            {
+                FirstName     = user.FirstName,
+                LastName      = user.LastName,
+                Sex           = user.Sex,
+                Age           = user.Age,
+                Height        = user.Height,        // already in cm from backend
+                Weight        = user.Weight,        // already in kg from backend
+                ActivityLevel = user.ActivityLevel, // e.g. "moderately_active"
+                Goal          = goal,               // 🔥 <-- this is the ONLY thing we change
+                DietaryFlags  = user.DietaryFlags ?? new List<string>(),
+                MealsPerDay   = user.MealsPerDay
+            };
+
+            // 3) Send PUT /api/v1/users/ with the full payload
+            var response = await _http.PutAsJsonAsync("/api/v1/users/", request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine("UpdateUserGoal error: " + error);
+                return false;
+            }
+
+            Console.WriteLine($"✅ UpdateUserGoal succeeded for goal='{goal}'");
+            return true;
         }
 
         // ------------- MEAL PLAN -------------
