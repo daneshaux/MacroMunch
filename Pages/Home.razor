@@ -1,7 +1,10 @@
 @page "/home"
 @using System.Text.Json
+@using Microsoft.JSInterop
 @inject IJSRuntime JS
 @inject MacroMunch.Services.ApiService ApiService
+
+
 
 <div class="header-bar-home">
     <img src="@headerAvatarUrl" alt="User profile" class="profile-pic" />
@@ -38,7 +41,7 @@
                     <h2 class="h2">Hi @userFirstName,</h2>
                     <p class="h5">Enjoy your meal plan!</p>
                 </div>
-                <button class="new-plan-btn" @onclick="RegeneratePlan">↻ New Plan</button>
+                <button class="new-plan-btn" @onclick="GoToSetup">↻ New Plan</button>
             </div>
 
             @if (mealPlan.Any())
@@ -158,10 +161,9 @@
         totalCalories = mealPlan.Sum(m => m.Calories);
     }
 
-    private void RegeneratePlan()
+    private void GoToSetup()
     {
-        UpdateTotals();
-        StateHasChanged();
+        NavigationManager.NavigateTo("/setup");
     }
 
     private void EnsureDemoTags()
@@ -251,19 +253,23 @@
             var macroResult = await ApiService.CalculateMacrosAsync(jwtToken);
 
             if (macroResult != null)
-            {
-                Console.WriteLine($"✅ API daily calories: {macroResult.Daily_Macros.Calories}");
-                Console.WriteLine($"   Protein: {macroResult.Daily_Macros.Protein} g");
-                Console.WriteLine($"   Carbs  : {macroResult.Daily_Macros.Carbs} g");
-                Console.WriteLine($"   Fat    : {macroResult.Daily_Macros.Fat} g");
+                {
+                    Console.WriteLine($"✅ API daily calories: {macroResult.Daily_Macros.Calories}");
+                    Console.WriteLine($"   Protein: {macroResult.Daily_Macros.Protein} g");
+                    Console.WriteLine($"   Carbs  : {macroResult.Daily_Macros.Carbs} g");
+                    Console.WriteLine($"   Fat    : {macroResult.Daily_Macros.Fat} g");
 
-                // Later we can wire these into your summary cards
+                    // 🔥 Use backend macros for the summary cards
+                    proteinTotal  = (int)Math.Round(macroResult.Daily_Macros.Protein);
+                    carbsTotal    = (int)Math.Round(macroResult.Daily_Macros.Carbs);
+                    fatTotal      = (int)Math.Round(macroResult.Daily_Macros.Fat);
+                    totalCalories = macroResult.Daily_Macros.Calories;
+                }
+                else
+                {
+                    Console.WriteLine("CalculateMacrosAsync returned null.");
+                }
             }
-            else
-            {
-                Console.WriteLine("CalculateMacrosAsync returned null.");
-            }
-        }
         catch (Exception ex)
         {
             Console.WriteLine("❌ Error calling CalculateMacrosAsync: " + ex.Message);
