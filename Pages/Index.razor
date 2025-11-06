@@ -66,7 +66,6 @@
 @code {
     private string email = "";
     private string password = "";
-    private string userId = "testUserId"; // Replace with actual user ID later
     private string errorMessage = "";
     private bool showPassword = false;
 
@@ -80,33 +79,11 @@
             return;
         }
 
-        // 🔹 TEMP: fake "user exists" logic for now
-        // Later, replace with a real Supabase / backend call.
-        bool userExists = await CheckIfUserExists(email);
+        // Save email for later (UserInfo, etc.)
+        await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
 
-        if (userExists)
-        {
-            // Existing user → show password field on this same screen
-            showPassword = true;
-
-            // Store email for later screens if needed
-            await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
-        }
-        else
-        {
-            // New user → send them to signup flow
-            await JS.InvokeVoidAsync("firebaseInterop.saveUserEmail", userId, email);
-            await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
-            NavigationManager.NavigateTo("/userinfo");
-        }
-    }
-
-    private async Task<bool> CheckIfUserExists(string email)
-    {
-        // TODO: Replace this with real Supabase check.
-        // For now, treat any @test.com email as an "existing" user to test the flow.
-        await Task.CompletedTask;
-        return email.EndsWith("@test.com", StringComparison.OrdinalIgnoreCase);
+        // Reveal password field + sign-in button
+        showPassword = true;
     }
 
     private async Task SignInUser()
@@ -121,40 +98,50 @@
 
         try
         {
-            // 🧩 Step 1: Mock login check for testing
-            bool loginSuccessful = await CheckMockLogin(email, password);
+            var token = await JS.InvokeAsync<string?>(
+                "supabaseInterop.signIn",
+                email,
+                password
+            );
 
-            if (!loginSuccessful)
+            if (string.IsNullOrEmpty(token))
             {
-                errorMessage = "Invalid email or password.";
+                errorMessage = "Could not sign you in. Please check your email and password.";
                 return;
             }
 
-            // 🧩 Step 2: Pretend to get a JWT token
-            var fakeJwt = "test-jwt";
-            await JS.InvokeVoidAsync("localStorage.setItem", "jwt", fakeJwt);
+            // 💾 Store JWT + email
+            await JS.InvokeVoidAsync("localStorage.setItem", "supabaseJwt", token);
             await JS.InvokeVoidAsync("localStorage.setItem", "userEmail", email);
 
-            // 🧩 Step 3: Navigate to home page
-            NavigationManager.NavigateTo("/home");
+            // 👀 Check if they've already completed /userinfo before
+            var onboardingFlag = await JS.InvokeAsync<string>("localStorage.getItem", "userOnboardingCompleted");
+
+            if (onboardingFlag == "true")
+            {
+                // Returning user → straight to Home
+                NavigationManager.NavigateTo("/home");
+            }
+            else
+            {
+                // First time → finish signup info
+                NavigationManager.NavigateTo("/userinfo");
+            }
+        }
+        catch (JSException ex)
+        {
+            Console.WriteLine("Supabase signIn JS error: " + ex.Message);
+            errorMessage = ex.Message;
         }
         catch (Exception ex)
         {
-            errorMessage = $"Login failed: {ex.Message}";
+            Console.WriteLine("Unexpected auth error: " + ex.Message);
+            errorMessage = "Something went wrong. Please try again.";
         }
-    }
-
-    // 👇🏾 Mock backend function for now
-    private async Task<bool> CheckMockLogin(string email, string password)
-    {
-        await Task.Delay(200); // Simulate network delay
-        // Allow any email ending in @test.com to log in with this password
-        return email.EndsWith("@test.com", StringComparison.OrdinalIgnoreCase) && password == "password123";
     }
 
     private void ResetEmail()
     {
-        // Let the user change the email if we guessed wrong
         showPassword = false;
         password = "";
         errorMessage = "";

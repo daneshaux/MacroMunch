@@ -293,6 +293,10 @@
       "PackagePath": "staticwebassets/sample-data/weather.json"
     },
     {
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/supabaseInterop.js",
+      "PackagePath": "staticwebassets/supabaseInterop.js"
+    },
+    {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.MacroMunch.Microsoft.AspNetCore.StaticWebAssets.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
     },

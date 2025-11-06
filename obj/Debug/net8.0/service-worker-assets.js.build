@@ -261,7 +261,7 @@
       "url": "Images\/Recipes\/salmon-veggies.png"
     },
     {
-      "hash": "sha256-u9Gyjinu2ZJiD7p04QUtExXTSPNKJDAxRDMhw7XBEGo=",
+      "hash": "sha256-yC5LfZ\/KPbNvPVyAs24fIZ6pMMZfQ7ki2Gao5101lN8=",
       "url": "index.html"
     },
     {
@@ -271,6 +271,10 @@
     {
       "hash": "sha256-enKgCMkYmCpfEcmg6Annbmc40VZ\/A6aYYSQjZfVn2cU=",
       "url": "sample-data\/weather.json"
+    },
+    {
+      "hash": "sha256-c\/s6nYwAoR0AsZQ55BbmTzVRJl\/K6B5LHOs9E6nhqoE=",
+      "url": "supabaseInterop.js"
     },
     {
       "hash": "sha256-gvHfnndfEu1tRf0rFb5988rWq7ITIotOaE8+AMbKYbc=",
@@ -1081,17 +1085,17 @@
       "url": "_framework\/icudt_no_CJK.dat"
     },
     {
-      "hash": "sha256-+\/yEOF9DraB6plD\/KYQxYcZP6UqBMaYrICZuUMIFZ8M=",
+      "hash": "sha256-vZTOhKuq6TegiVk\/VCenA6gAJYSBpjO82Cxjnv95140=",
       "url": "_framework\/MacroMunch.wasm"
     },
     {
-      "hash": "sha256-VVkXpK242d+ZBI32Zc1qjPe\/ou\/5M\/C7ujZXIsvea+w=",
+      "hash": "sha256-8A1AHJ37eFCz1uXYXKj0gxDHHGn3asUWkjoho0O6eFA=",
       "url": "_framework\/MacroMunch.pdb"
     },
     {
-      "hash": "sha256-kai2YzRuvQMe2AQd8\/sRl7wPiSJV8+ck1e\/Jcnw2CWM=",
+      "hash": "sha256-yneFwadV251GXLwCZZArdw1PFunH25oaVCOjhqXV+Gw=",
       "url": "_framework\/blazor.boot.json"
     }
   ],
-  "version": "jYNUTo37"
+  "version": "A9mYrVr7"
 };

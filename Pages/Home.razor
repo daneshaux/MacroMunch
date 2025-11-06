@@ -1,6 +1,7 @@
 @page "/home"
 @using System.Text.Json
 @inject IJSRuntime JS
+@inject MacroMunch.Services.ApiService ApiService
 
 <div class="header-bar-home">
     <img src="@headerAvatarUrl" alt="User profile" class="profile-pic" />
@@ -122,6 +123,8 @@
 
 
 @code {
+    private string? jwtToken;  // will be loaded from localStorage
+
     private List<Meal> mealPlan = new();
     private bool isLoading = true;
 
@@ -129,16 +132,13 @@
 
     private string activePage = "home";
 
-    // Computed classes (no literals in markup)
     string HomeClass => activePage == "home" ? "nav-icon active" : "nav-icon";
     string RecipesClass => activePage == "recipes" ? "nav-icon active" : "nav-icon";
     string ProfileClass => activePage == "profile" ? "nav-icon active" : "nav-icon";
 
-    // Click handlers
     void GoRecipes() => NavigationManager.NavigateTo("/recipes");
     void GoHome() => NavigationManager.NavigateTo("/home");
     void GoProfile() => NavigationManager.NavigateTo("/profile");
-    
 
     void SetActivePage(string page)
     {
@@ -148,7 +148,6 @@
 
     private string headerAvatarUrl = "images/profile.png";
 
-    // Totals shown in Daily Summaries
     private int proteinTotal, carbsTotal, fatTotal, totalCalories;
 
     private void UpdateTotals()
@@ -161,8 +160,6 @@
 
     private void RegeneratePlan()
     {
-        // TODO: call your generator / Firebase function here, then:
-        // mealPlan = newPlan;
         UpdateTotals();
         StateHasChanged();
     }
@@ -172,13 +169,13 @@
         foreach (var m in mealPlan)
         {
             if (m.DietaryTags == null || m.DietaryTags.Count == 0)
-                m.DietaryTags = new List<string> { "Vegan" };     // demo
+                m.DietaryTags = new List<string> { "Vegan" };
 
             if (m.StyleTags == null || m.StyleTags.Count == 0)
-                m.StyleTags = new List<string> { "Kosher" };      // demo
+                m.StyleTags = new List<string> { "Kosher" };
 
             if (string.IsNullOrWhiteSpace(m.SpiceLevel))
-                m.SpiceLevel = "Mild";                            // demo
+                m.SpiceLevel = "Mild";
         }
     }
 
@@ -189,55 +186,94 @@
         if (!string.IsNullOrWhiteSpace(m.SpiceLevel)) yield return (m.SpiceLevel!, "spice");
     }
 
-    private string userFirstName = "there"; // fallback default
+    private string userFirstName = "there";
 
     protected override async Task OnInitializedAsync()
     {
-        // Fetch user first name from localStorage
+        // 1️⃣ Greeting
         var storedName = await JS.InvokeAsync<string>("localStorage.getItem", "userFirstName");
         if (!string.IsNullOrWhiteSpace(storedName))
         {
             userFirstName = storedName;
         }
 
-        var mealPlanJson = await JS.InvokeAsync<string>("firebaseInterop.getMealPlan", "testUserId");
-
-        if (!string.IsNullOrWhiteSpace(mealPlanJson))
-        {
-            try
-            {
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-
-                // ✅ Deserialize first
-                mealPlan = JsonSerializer.Deserialize<List<Meal>>(mealPlanJson, options) ?? new();
-
-                // ✅ Ensure demo tags exist
-                EnsureDemoTags();
-
-                // ✅ Then update totals
-                UpdateTotals();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed to parse meal plan JSON: " + ex.Message);
-            }
-        }
-
-        // Fetch avatar URL from localStorage
+        // 2️⃣ Avatar
         var storedAvatar = await JS.InvokeAsync<string>("localStorage.getItem", "userAvatarUrl");
         if (!string.IsNullOrWhiteSpace(storedAvatar))
             headerAvatarUrl = storedAvatar;
 
+        // 3️⃣ Has this user finished dietary onboarding yet?
+        var dietFlag = await JS.InvokeAsync<string>("localStorage.getItem", "dietOnboardingCompleted");
+
+        if (dietFlag == "true")
+        {
+            // ✅ Only load meal plan if they’ve completed dietary preferences at least once
+            var mealPlanJson = await JS.InvokeAsync<string>("firebaseInterop.getMealPlan", "testUserId");
+
+            if (!string.IsNullOrWhiteSpace(mealPlanJson))
+            {
+                try
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+
+                    mealPlan = JsonSerializer.Deserialize<List<Meal>>(mealPlanJson, options) ?? new();
+                    EnsureDemoTags();
+                    UpdateTotals();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Failed to parse meal plan JSON: " + ex.Message);
+                }
+            }
+        }
+        else
+        {
+            // ❌ No dietary onboarding yet → keep mealPlan empty → show empty state UI
+            mealPlan = new List<Meal>();
+            proteinTotal = carbsTotal = fatTotal = totalCalories = 0;
+        }
+
+        // 4️⃣ Supabase JWT → call Vishesh’s API for macros
+        jwtToken = await JS.InvokeAsync<string>("localStorage.getItem", "supabaseJwt");
+        if (string.IsNullOrWhiteSpace(jwtToken))
+        {
+            Console.WriteLine("No Supabase JWT found in localStorage – user might not be logged in via Supabase.");
+            isLoading = false;
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            var macroResult = await ApiService.CalculateMacrosAsync(jwtToken);
+
+            if (macroResult != null)
+            {
+                Console.WriteLine($"✅ API daily calories: {macroResult.Daily_Macros.Calories}");
+                Console.WriteLine($"   Protein: {macroResult.Daily_Macros.Protein} g");
+                Console.WriteLine($"   Carbs  : {macroResult.Daily_Macros.Carbs} g");
+                Console.WriteLine($"   Fat    : {macroResult.Daily_Macros.Fat} g");
+
+                // Later we can wire these into your summary cards
+            }
+            else
+            {
+                Console.WriteLine("CalculateMacrosAsync returned null.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error calling CalculateMacrosAsync: " + ex.Message);
+        }
+
         isLoading = false;
         StateHasChanged();
     }
-
     private void CreateMealPlan()
     {
-        // Navigate to your meal plan setup page (replace with your actual route)
         NavigationManager.NavigateTo("/setup");
     }
 
@@ -251,10 +287,10 @@
         public int Carbs { get; set; }
         public int Fat { get; set; }
 
-        public List<string> DietaryTags { get; set; } = new(); // e.g., Vegan, Keto, Gluten-Free
-        public List<string> StyleTags { get; set; } = new();   // e.g., Mediterranean, Soul Food
-        public string? SpiceLevel { get; set; }                 // e.g., Mild, Medium, Spicy
-        }
+        public List<string> DietaryTags { get; set; } = new();
+        public List<string> StyleTags { get; set; } = new();
+        public string? SpiceLevel { get; set; }
+    }
 }
 
 <style>

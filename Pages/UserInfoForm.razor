@@ -229,7 +229,10 @@
         await JS.InvokeVoidAsync("localStorage.setItem", "userFirstName", firstName);
         await JS.InvokeVoidAsync("localStorage.setItem", "userLastName", lastName);
 
-        // Continue
+        // ✅ Mark onboarding as completed for this user on this device
+        await JS.InvokeVoidAsync("localStorage.setItem", "userOnboardingCompleted", "true");
+
+        // Continue to home
         NavigationManager.NavigateTo("/home");
     }
 
