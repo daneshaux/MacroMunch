@@ -1,6 +1,8 @@
 @page "/loading"
-@inject NavigationManager NavigationManager
-@inject IJSRuntime JS
+@using System.Text.Json
+@using System.Linq
+@using MacroMunch.Models
+@using MacroMunch.Services
 
 <div class="header-bar">
     <span class="back-arrow" @onclick="GoBack">←</span>
@@ -22,21 +24,137 @@
 </div>
 
 @code {
+    [Inject] private NavigationManager? NavigationManager { get; set; }
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private ApiService ApiService { get; set; } = default!;
+
+    // 👇 This class matches Home.Meal properties so JSON deserialization works there
+    private class MealForStorage
+    {
+        public string Type { get; set; } = "";
+        public string ImageUrl { get; set; } = "";
+        public string Name { get; set; } = "";
+        public int Calories { get; set; }
+        public int Protein { get; set; }
+        public int Carbs { get; set; }
+        public int Fat { get; set; }
+
+        public List<string> Ingredients { get; set; } = new();
+        public List<string> DietaryTags { get; set; } = new();
+        public List<string> StyleTags { get; set; } = new();
+        public string? SpiceLevel { get; set; }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            // (Later, we could also call Go APIs here if we want.)
-            await Task.Delay(1000); // nice little pause
+        if (!firstRender) return;
 
-            await JS.InvokeVoidAsync("localStorage.setItem", "dietOnboardingCompleted", "true");
-            NavigationManager.NavigateTo("/home");
+        try
+        {
+            // 1️⃣ Get Supabase JWT
+            var jwtToken = await JS.InvokeAsync<string>("localStorage.getItem", "supabaseJwt");
+            if (string.IsNullOrWhiteSpace(jwtToken))
+            {
+                Console.WriteLine("⚠️ No Supabase JWT found, skipping backend meal plan.");
+            }
+            else
+            {
+                // 2️⃣ Get macros from backend
+                var macroResult = await ApiService.CalculateMacrosAsync(jwtToken);
+                if (macroResult != null && macroResult.Meal_Macros.Any())
+                {
+                    Console.WriteLine("✅ Got macros, calling /meals/plan...");
+
+                    // 3️⃣ Build request for Vishesh's /plan endpoint
+                    var request = new MealPlanRequest
+                    {
+                        Meal_Macros = macroResult.Meal_Macros
+                    };
+
+                    var planResponse = await ApiService.GenerateMealPlanAsync(request, jwtToken);
+
+                    if (planResponse != null && planResponse.Meal_Plans.Any())
+                    {
+                        Console.WriteLine("✅ Got meal plan from backend, flattening to UI meals...");
+
+                        var uiMeals = new List<MealForStorage>();
+
+                        foreach (var mp in planResponse.Meal_Plans)
+                        {
+                            var firstRecipe = mp.Recipes.FirstOrDefault();
+
+                            // ✅ All diet tags coming from backend
+                            var dietTags = firstRecipe?.Diet_Tags ?? new List<string>();
+
+                            // ✅ Build style tags dynamically
+                            var styleTags = new List<string>();
+
+                            // Simple rule: only call it "High Protein" if it’s really high
+                            if (mp.Actual_Macros.Protein >= 40)
+                            {
+                                styleTags.Add("High Protein");
+                            }
+                            else
+                            {
+                                styleTags.Add("Balanced");
+                            }
+
+                            // Also add the recipe category if backend has one
+                            if (!string.IsNullOrWhiteSpace(firstRecipe?.Category))
+                            {
+                                styleTags.Add(firstRecipe.Category);
+                            }
+
+                            uiMeals.Add(new MealForStorage
+                            {
+                                Type      = $"Meal {mp.Meal_Number}",
+                                Name      = mp.Meal_Name,
+                                ImageUrl  = "images/food-placeholder.png",
+                                Calories  = mp.Actual_Macros.Calories,
+                                Protein   = (int)Math.Round(mp.Actual_Macros.Protein),
+                                Carbs     = (int)Math.Round(mp.Actual_Macros.Carbs),
+                                Fat       = (int)Math.Round(mp.Actual_Macros.Fat),
+                                DietaryTags = dietTags,
+                                StyleTags   = styleTags,
+                                SpiceLevel  = "Mild",
+                                Ingredients = firstRecipe?.Ingredients?
+                                    .Select(i => $"{i.Grams:N0}g {i.Ingredient_Name}")
+                                    .ToList()
+                                    ?? new List<string>()
+                            });
+                        }
+
+                        // 4️⃣ Save to localStorage in a shape Home can read
+                        var json = JsonSerializer.Serialize(uiMeals);
+                        await JS.InvokeVoidAsync("localStorage.setItem", "mealPlan", json);
+
+                        Console.WriteLine("🍽️ Saved Go-generated meal plan to localStorage['mealPlan']");
+                    }
+                    else
+                    {
+                        Console.WriteLine("⚠️ GenerateMealPlanAsync returned null or no meals.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("⚠️ CalculateMacrosAsync returned null or no meal_macros.");
+                }
+            }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ Error generating meal plan via Go API: " + ex.Message);
+        }
+
+        // 5️⃣ Flip flag + navigate home after a small UX delay
+        await Task.Delay(1000);
+        await JS.InvokeVoidAsync("localStorage.setItem", "dietOnboardingCompleted", "true");
+        NavigationManager!.NavigateTo("/home");
     }
 
     private void GoBack()
     {
-        NavigationManager.NavigateTo("/flavor-profiles");
+        NavigationManager!.NavigateTo("/flavor-profiles");
     }
 }
 

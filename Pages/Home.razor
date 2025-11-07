@@ -36,54 +36,54 @@
         {
             <!-- 🍽️ Populated meal plan -->
             <div class="welcome-section">
-            <div class="welcome-header">
-                <div>
-                    <h2 class="h2">Hi @userFirstName,</h2>
-                    <p class="h5">Enjoy your meal plan!</p>
+                <div class="welcome-header">
+                    <div>
+                        <h2 class="h2">Hi @userFirstName,</h2>
+                        <p class="h5">Enjoy your meal plan!</p>
+                    </div>
+                    <button class="new-plan-btn" @onclick="GoToSetup">↻ New Plan</button>
                 </div>
-                <button class="new-plan-btn" @onclick="GoToSetup">↻ New Plan</button>
-            </div>
 
-            @if (mealPlan.Any())
-            {
-                <div class="summary-header">
-                    <h6 class="h6">Daily Summaries</h6>
-                    <span class="kcal-total">@($"{totalCalories:N0} kcal")</span>
-                </div>
-            }
+                @if (mealPlan.Any())
+                {
+                    <div class="summary-header">
+                        <h6 class="h6">Daily Summaries</h6>
+                        <span class="kcal-total">@($"{totalCalories:N0} kcal")</span>
+                    </div>
+                }
 
-            <div class="summary-row">
-                <div class="summary-card">
-                    <div class="h6 bold">@proteinTotal g</div>
-                    <div class="caption">Protein</div>
-                </div>
-                <div class="summary-card">
-                    <div class="h6 bold">@carbsTotal g</div>
-                    <div class="caption">Carbs</div>
-                </div>
-                <div class="summary-card">
-                    <div class="h6 bold">@fatTotal g</div>
-                    <div class="caption">Fat</div>
+                <div class="summary-row">
+                    <div class="summary-card">
+                        <div class="h6 bold">@proteinTotal g</div>
+                        <div class="caption">Protein</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="h6 bold">@carbsTotal g</div>
+                        <div class="caption">Carbs</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="h6 bold">@fatTotal g</div>
+                        <div class="caption">Fat</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
             <div class="meal-cards">
                 @foreach (var meal in mealPlan)
                 {
-                    <div class="meal-card">
+                    <div class="meal-card" @onclick="@(() => OpenMeal(meal))">
                         <div class="meal-top-row">
-                        <span class="meal-type">@meal.Type</span>
+                            <span class="meal-type">@meal.Type</span>
 
-                        <div class="meta-col">
-                            <span class="calories">@meal.Calories kcal</span>
-                            <div class="tag-row">
-                            @foreach (var t in GetDisplayTags(meal))
-                            {
-                                <span class="tag @t.cls">@t.tag</span>
-                            }
+                            <div class="meta-col">
+                                <span class="calories">@meal.Calories kcal</span>
+                                <div class="tag-row">
+                                    @foreach (var t in GetDisplayTags(meal))
+                                    {
+                                        <span class="tag @t.cls">@t.tag</span>
+                                    }
+                                </div>
                             </div>
-                        </div>
                         </div>
 
                         <img src="@meal.ImageUrl" alt="@meal.Name" class="meal-image" />
@@ -109,7 +109,29 @@
             </div>
         }
     </div>
-</div>
+    </div>
+
+@if (selectedMeal != null)
+{
+    <div class="meal-overlay" @onclick="CloseMeal">
+        <div class="meal-sheet" @onclick:stopPropagation>
+            <h3 class="h4">@selectedMeal.Name</h3>
+            <p class="caption">@selectedMeal.Calories kcal • @selectedMeal.Protein g protein</p>
+
+            <h4 class="h6" style="margin-top:16px;">Ingredients</h4>
+            <ul class="ingredient-list">
+                @foreach (var ing in selectedMeal.Ingredients)
+                {
+                    <li>@ing</li>
+                }
+            </ul>
+
+            <button class="primary-btn" style="margin-top:16px;" @onclick="CloseMeal">
+                Close
+            </button>
+        </div>
+    </div>
+}
 
 <div class="nav-wrapper">
   <div class="bottom-nav">
@@ -166,21 +188,6 @@
         NavigationManager.NavigateTo("/setup");
     }
 
-    private void EnsureDemoTags()
-    {
-        foreach (var m in mealPlan)
-        {
-            if (m.DietaryTags == null || m.DietaryTags.Count == 0)
-                m.DietaryTags = new List<string> { "Vegan" };
-
-            if (m.StyleTags == null || m.StyleTags.Count == 0)
-                m.StyleTags = new List<string> { "Kosher" };
-
-            if (string.IsNullOrWhiteSpace(m.SpiceLevel))
-                m.SpiceLevel = "Mild";
-        }
-    }
-
     IEnumerable<(string tag, string cls)> GetDisplayTags(Meal m)
     {
         if (m.DietaryTags?.Any() == true) yield return (m.DietaryTags[0], "diet");
@@ -210,7 +217,7 @@
         if (dietFlag == "true")
         {
             // ✅ Only load meal plan if they’ve completed dietary preferences at least once
-            var mealPlanJson = await JS.InvokeAsync<string>("firebaseInterop.getMealPlan", "testUserId");
+            var mealPlanJson = await JS.InvokeAsync<string>("localStorage.getItem", "mealPlan");
 
             if (!string.IsNullOrWhiteSpace(mealPlanJson))
             {
@@ -222,7 +229,6 @@
                     };
 
                     mealPlan = JsonSerializer.Deserialize<List<Meal>>(mealPlanJson, options) ?? new();
-                    EnsureDemoTags();
                     UpdateTotals();
                 }
                 catch (Exception ex)
@@ -249,17 +255,16 @@
         }
 
         try
-        {
-            var macroResult = await ApiService.CalculateMacrosAsync(jwtToken);
+            {
+                var macroResult = await ApiService.CalculateMacrosAsync(jwtToken);
 
-            if (macroResult != null)
+                if (macroResult != null)
                 {
                     Console.WriteLine($"✅ API daily calories: {macroResult.Daily_Macros.Calories}");
                     Console.WriteLine($"   Protein: {macroResult.Daily_Macros.Protein} g");
                     Console.WriteLine($"   Carbs  : {macroResult.Daily_Macros.Carbs} g");
                     Console.WriteLine($"   Fat    : {macroResult.Daily_Macros.Fat} g");
 
-                    // 🔥 Use backend macros for the summary cards
                     proteinTotal  = (int)Math.Round(macroResult.Daily_Macros.Protein);
                     carbsTotal    = (int)Math.Round(macroResult.Daily_Macros.Carbs);
                     fatTotal      = (int)Math.Round(macroResult.Daily_Macros.Fat);
@@ -270,11 +275,10 @@
                     Console.WriteLine("CalculateMacrosAsync returned null.");
                 }
             }
-        catch (Exception ex)
-        {
-            Console.WriteLine("❌ Error calling CalculateMacrosAsync: " + ex.Message);
-        }
-
+            catch (Exception ex)
+            {
+                Console.WriteLine("❌ Error calling CalculateMacrosAsync: " + ex.Message);
+            }
         isLoading = false;
         StateHasChanged();
     }
@@ -296,6 +300,20 @@
         public List<string> DietaryTags { get; set; } = new();
         public List<string> StyleTags { get; set; } = new();
         public string? SpiceLevel { get; set; }
+
+        public List<string> Ingredients { get; set; } = new();
+    }
+
+    private Meal? selectedMeal;
+
+    private void OpenMeal(Meal meal)
+    {
+        selectedMeal = meal;
+    }
+
+    private void CloseMeal()
+    {
+        selectedMeal = null;
     }
 }
 
@@ -445,4 +463,37 @@
         0%, 100% { opacity: 0.6; }
         50% { opacity: 1; }
     }
+
+    .meal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    z-index: 20;
+}
+
+.meal-sheet {
+    background: #121212;
+    border-radius: 16px;
+    padding: 16px 20px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.ingredient-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 8px 0 0 0;
+    font-size: 14px;
+    color: #F2F2F2;
+}
+
+.ingredient-list li {
+    margin-bottom: 4px;
+}
 </style>
