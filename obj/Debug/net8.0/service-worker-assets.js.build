@@ -1097,17 +1097,17 @@
       "url": "_framework\/icudt_no_CJK.dat"
     },
     {
-      "hash": "sha256-qhtIcu8RnkJMp4N9MwRViCeLbaJswQJreZWh+rXcewY=",
+      "hash": "sha256-xnf\/kkn6mJM1WFu6HxfwJnmpJeJ\/gnei+i694DB7BFI=",
       "url": "_framework\/MacroMunch.wasm"
     },
     {
-      "hash": "sha256-bhVBtdLjO6Bl47+Vfp46C7LLJfyDolCvAqGCHy5hvsQ=",
+      "hash": "sha256-REismht1kjGlyMQVWifWeVg+bdM9CKVJjwoDxU5hwMo=",
       "url": "_framework\/MacroMunch.pdb"
     },
     {
-      "hash": "sha256-0TRCbxyBj2r\/\/1X5BF8uY4w4larwPgYlfMPmRN31mG4=",
+      "hash": "sha256-E+NiYulqOie24wiM8qiYqKA66Fl3aL4YtCzlOa+iIx4=",
       "url": "_framework\/blazor.boot.json"
     }
   ],
-  "version": "dK+5Q8qQ"
+  "version": "Pzj6xr23"
 };
