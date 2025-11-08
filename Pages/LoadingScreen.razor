@@ -46,111 +46,172 @@
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (!firstRender) return;
+
+    try
     {
-        if (!firstRender) return;
-
-        try
+        // 1️⃣ Get Supabase JWT
+        var jwtToken = await JS.InvokeAsync<string>("localStorage.getItem", "supabaseJwt");
+        if (string.IsNullOrWhiteSpace(jwtToken))
         {
-            // 1️⃣ Get Supabase JWT
-            var jwtToken = await JS.InvokeAsync<string>("localStorage.getItem", "supabaseJwt");
-            if (string.IsNullOrWhiteSpace(jwtToken))
+            Console.WriteLine("⚠️ No Supabase JWT found, skipping backend meal plan.");
+        }
+        else
+        {
+            // 2️⃣ Get macros from backend
+            var macroResult = await ApiService.CalculateMacrosAsync(jwtToken);
+            if (macroResult != null && macroResult.Meal_Macros.Any())
             {
-                Console.WriteLine("⚠️ No Supabase JWT found, skipping backend meal plan.");
-            }
-            else
-            {
-                // 2️⃣ Get macros from backend
-                var macroResult = await ApiService.CalculateMacrosAsync(jwtToken);
-                if (macroResult != null && macroResult.Meal_Macros.Any())
-                {
-                    Console.WriteLine("✅ Got macros, calling /meals/plan...");
+                Console.WriteLine("✅ Got macros, calling /meals/plan...");
 
-                    // 3️⃣ Build request for Vishesh's /plan endpoint
-                    var request = new MealPlanRequest
+                // 3️⃣ Build request for /meals/plan
+                var request = new MealPlanRequest
+                {
+                    Meal_Macros = macroResult.Meal_Macros
+                };
+
+                var planResponse = await ApiService.GenerateMealPlanAsync(request, jwtToken);
+
+                if (planResponse != null && planResponse.Meal_Plans.Any())
+                {
+                    Console.WriteLine("✅ Got meal plan from backend, flattening to UI meals...");
+
+                    var uiMeals = new List<MealForStorage>();
+
+                    // 🌎 Demo Alberta names for the FIRST 3 meals
+                    var demoNames = new[]
                     {
-                        Meal_Macros = macroResult.Meal_Macros
+                        "Hearty Bison Chili",
+                        "Maple Veggie Power Bowl",
+                        "Cedar Plank Salmon"
                     };
 
-                    var planResponse = await ApiService.GenerateMealPlanAsync(request, jwtToken);
-
-                    if (planResponse != null && planResponse.Meal_Plans.Any())
+                    // 🖼️ Map demo names → images
+                    var imageMap = new Dictionary<string, string>
                     {
-                        Console.WriteLine("✅ Got meal plan from backend, flattening to UI meals...");
+                        { "Hearty Bison Chili",       "images/recipes/bison-chili.webp" },
+                        { "Maple Veggie Power Bowl",  "images/recipes/maple-veggie-bowl.webp" },
+                        { "Cedar Plank Salmon",       "images/recipes/salmon-bowl.webp" }
+                    };
 
-                        var uiMeals = new List<MealForStorage>();
-
-                        foreach (var mp in planResponse.Meal_Plans)
+                    // 🍽️ Optional: pretty demo ingredients JUST for those 3
+                    var ingredientMap = new Dictionary<string, List<string>>
+                    {
                         {
-                            var firstRecipe = mp.Recipes.FirstOrDefault();
-
-                            // ✅ All diet tags coming from backend
-                            var dietTags = firstRecipe?.Diet_Tags ?? new List<string>();
-
-                            // ✅ Build style tags dynamically
-                            var styleTags = new List<string>();
-
-                            // Simple rule: only call it "High Protein" if it’s really high
-                            if (mp.Actual_Macros.Protein >= 40)
+                            "Hearty Bison Chili",
+                            new List<string>
                             {
-                                styleTags.Add("High Protein");
+                                "150g ground bison",
+                                "80g kidney beans",
+                                "60g tomato sauce",
+                                "30g onion",
+                                "Spices & herbs"
                             }
-                            else
+                        },
+                        {
+                            "Maple Veggie Power Bowl",
+                            new List<string>
                             {
-                                styleTags.Add("Balanced");
+                                "100g roasted root vegetables",
+                                "80g quinoa",
+                                "15g maple maple glaze",
+                                "10g pumpkin seeds",
+                                "Fresh greens"
                             }
-
-                            // Also add the recipe category if backend has one
-                            if (!string.IsNullOrWhiteSpace(firstRecipe?.Category))
+                        },
+                        {
+                            "Cedar Plank Salmon",
+                            new List<string>
                             {
-                                styleTags.Add(firstRecipe.Category);
+                                "140g wild salmon",
+                                "80g roasted potatoes",
+                                "60g seasonal vegetables",
+                                "Lemon & herb rub"
                             }
+                        }
+                    };
 
-                            uiMeals.Add(new MealForStorage
-                            {
-                                Type      = $"Meal {mp.Meal_Number}",
-                                Name      = mp.Meal_Name,
-                                ImageUrl  = "images/food-placeholder.png",
-                                Calories  = mp.Actual_Macros.Calories,
-                                Protein   = (int)Math.Round(mp.Actual_Macros.Protein),
-                                Carbs     = (int)Math.Round(mp.Actual_Macros.Carbs),
-                                Fat       = (int)Math.Round(mp.Actual_Macros.Fat),
-                                DietaryTags = dietTags,
-                                StyleTags   = styleTags,
-                                SpiceLevel  = "Mild",
-                                Ingredients = firstRecipe?.Ingredients?
-                                    .Select(i => $"{i.Grams:N0}g {i.Ingredient_Name}")
-                                    .ToList()
-                                    ?? new List<string>()
-                            });
+                    var index = 0;
+
+                    foreach (var mp in planResponse.Meal_Plans)
+                    {
+                        var firstRecipe = mp.Recipes.FirstOrDefault();
+
+                        // ✅ Diet tags from backend
+                        var dietTags = firstRecipe?.Diet_Tags ?? new List<string>();
+
+                        // ✅ Simple style tags
+                        var styleTags = new List<string>();
+                        if (mp.Actual_Macros.Protein >= 40)
+                            styleTags.Add("High Protein");
+                        else
+                            styleTags.Add("Balanced");
+
+                        if (!string.IsNullOrWhiteSpace(firstRecipe?.Category))
+                            styleTags.Add(firstRecipe.Category);
+
+                        // 👇 Alberta demo name for first 3 meals; fallback to backend name for others
+                        var displayName = index < demoNames.Length
+                            ? demoNames[index++]
+                            : mp.Meal_Name;
+
+                        // 👇 Choose image based on demo name, else placeholder
+                        var imageUrl = imageMap.TryGetValue(displayName, out var mappedUrl)
+                            ? mappedUrl
+                            : "images/food-placeholder.png";
+
+                        // 👇 Ingredients: use demo ones if we have them, else real backend ingredients
+                        List<string> ingredients;
+                        if (ingredientMap.TryGetValue(displayName, out var demoIngredients))
+                        {
+                            ingredients = demoIngredients;
+                        }
+                        else
+                        {
+                            ingredients = firstRecipe?.Ingredients
+                                ?.Select(i => $"{i.Grams:N0}g {i.Ingredient_Name}")
+                                .ToList()
+                                ?? new List<string>();
                         }
 
-                        // 4️⃣ Save to localStorage in a shape Home can read
-                        var json = JsonSerializer.Serialize(uiMeals);
-                        await JS.InvokeVoidAsync("localStorage.setItem", "mealPlan", json);
+                        uiMeals.Add(new MealForStorage
+                        {
+                            Type        = $"Meal {mp.Meal_Number}",
+                            Name        = displayName,
+                            ImageUrl    = imageUrl,
+                            Calories    = mp.Actual_Macros.Calories,
+                            Protein     = (int)Math.Round(mp.Actual_Macros.Protein),
+                            Carbs       = (int)Math.Round(mp.Actual_Macros.Carbs),
+                            Fat         = (int)Math.Round(mp.Actual_Macros.Fat),
+                            DietaryTags = dietTags,
+                            StyleTags   = styleTags,
+                            SpiceLevel  = "Mild",
+                            Ingredients = ingredients
+                        });
+                    }
 
-                        Console.WriteLine("🍽️ Saved Go-generated meal plan to localStorage['mealPlan']");
-                    }
-                    else
-                    {
-                        Console.WriteLine("⚠️ GenerateMealPlanAsync returned null or no meals.");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("⚠️ CalculateMacrosAsync returned null or no meal_macros.");
+                    var json = System.Text.Json.JsonSerializer.Serialize(uiMeals);
+                    await JS.InvokeVoidAsync("localStorage.setItem", "mealPlan", json);
+
+                    Console.WriteLine("🍽️ Saved Go-generated meal plan to localStorage['mealPlan']");
                 }
             }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine("❌ Error generating meal plan via Go API: " + ex.Message);
-        }
 
-        // 5️⃣ Flip flag + navigate home after a small UX delay
-        await Task.Delay(1000);
+        // ✅ Mark dietary onboarding done + go home
         await JS.InvokeVoidAsync("localStorage.setItem", "dietOnboardingCompleted", "true");
         NavigationManager!.NavigateTo("/home");
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ Error in LoadingScreen: " + ex.Message);
+
+        // fail-safe: still mark onboarding done and move on
+        await JS.InvokeVoidAsync("localStorage.setItem", "dietOnboardingCompleted", "true");
+        NavigationManager!.NavigateTo("/home");
+    }
+}
 
     private void GoBack()
     {

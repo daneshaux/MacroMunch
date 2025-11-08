@@ -209,8 +209,16 @@
       "PackagePath": "staticwebassets/Images/Recipes/beyond-chili.png"
     },
     {
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/bison-chili.webp",
+      "PackagePath": "staticwebassets/Images/Recipes/bison-chili.webp"
+    },
+    {
       "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/chicken-salad.png",
       "PackagePath": "staticwebassets/Images/Recipes/chicken-salad.png"
+    },
+    {
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/maple-veggie-bowl.webp",
+      "PackagePath": "staticwebassets/Images/Recipes/maple-veggie-bowl.webp"
     },
     {
       "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/mushroom-pasta.png",
@@ -239,6 +247,10 @@
     {
       "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/salmon-bowl.png",
       "PackagePath": "staticwebassets/Images/Recipes/salmon-bowl.png"
+    },
+    {
+      "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/salmon-bowl.webp",
+      "PackagePath": "staticwebassets/Images/Recipes/salmon-bowl.webp"
     },
     {
       "Id": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/salmon-veggies.png",

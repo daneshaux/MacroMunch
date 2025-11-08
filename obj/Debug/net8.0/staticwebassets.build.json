@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "lci/yfbDgVYrdGzUHvrN2KAfkapvb0GTOXRnr+zBUtk=",
+  "Hash": "buKFeCYfZRHEmVOULkvTZYvyKYdtBS+lX+PJgaIgNrE=",
   "Source": "MacroMunch",
   "BasePath": "/",
   "Mode": "Root",
@@ -8947,6 +8947,25 @@
       "OriginalItemSpec": "wwwroot/Images/Recipes/beyond-chili.png"
     },
     {
+      "Identity": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/bison-chili.webp",
+      "SourceId": "MacroMunch",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/",
+      "BasePath": "/",
+      "RelativePath": "Images/Recipes/bison-chili.webp",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/Images/Recipes/bison-chili.webp"
+    },
+    {
       "Identity": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/chicken-salad.png",
       "SourceId": "MacroMunch",
       "SourceType": "Discovered",
@@ -8964,6 +8983,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/Images/Recipes/chicken-salad.png"
+    },
+    {
+      "Identity": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/maple-veggie-bowl.webp",
+      "SourceId": "MacroMunch",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/",
+      "BasePath": "/",
+      "RelativePath": "Images/Recipes/maple-veggie-bowl.webp",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/Images/Recipes/maple-veggie-bowl.webp"
     },
     {
       "Identity": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/mushroom-pasta.png",
@@ -9097,6 +9135,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/Images/Recipes/salmon-bowl.png"
+    },
+    {
+      "Identity": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/salmon-bowl.webp",
+      "SourceId": "MacroMunch",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/",
+      "BasePath": "/",
+      "RelativePath": "Images/Recipes/salmon-bowl.webp",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/Images/Recipes/salmon-bowl.webp"
     },
     {
       "Identity": "/Users/daneshawilliams/MacroMunch 2/MacroMunch/wwwroot/Images/Recipes/salmon-veggies.png",

@@ -225,8 +225,16 @@
       "url": "Images\/Recipes\/beyond-chili.png"
     },
     {
+      "hash": "sha256-7okG3a9q7FgllnAT+CtIXNyoMAHIuhiuB1VpgqDOBkg=",
+      "url": "Images\/Recipes\/bison-chili.webp"
+    },
+    {
       "hash": "sha256-DBhIWJ3IMh2B3ab+l147RU1R0J9VwsEDj\/Ucih3QNL0=",
       "url": "Images\/Recipes\/chicken-salad.png"
+    },
+    {
+      "hash": "sha256-zNPVtnABud52Q3Ht82sDTwLE4pg0JyeUlXqE47RfVcA=",
+      "url": "Images\/Recipes\/maple-veggie-bowl.webp"
     },
     {
       "hash": "sha256-6M9uF8cYiuKZeHaMdYLyOoSw5Wrd1s0eqsS48B2KqQk=",
@@ -255,6 +263,10 @@
     {
       "hash": "sha256-bGhkDVEYi8zNwHcjGMEAPLC012YoD+zfZOyf\/3593eA=",
       "url": "Images\/Recipes\/salmon-bowl.png"
+    },
+    {
+      "hash": "sha256-Ar5VVeE7dxhQ5QmVe3TWboLJ4P0oPl40EvQn4yc1fjM=",
+      "url": "Images\/Recipes\/salmon-bowl.webp"
     },
     {
       "hash": "sha256-Rse9Eyki2YAszZng00ajzIcBCQDiKqAj3jfGFc4sRsQ=",
@@ -1085,17 +1097,17 @@
       "url": "_framework\/icudt_no_CJK.dat"
     },
     {
-      "hash": "sha256-LWzZsm\/9+1WiMHWcJxNcsjg\/axnNlZPqVPPxJACuGZE=",
+      "hash": "sha256-qhtIcu8RnkJMp4N9MwRViCeLbaJswQJreZWh+rXcewY=",
       "url": "_framework\/MacroMunch.wasm"
     },
     {
-      "hash": "sha256-QCw8HPUcFT+fEP9vg+P5mabKAHDr10JJi5POp6HLJrY=",
+      "hash": "sha256-bhVBtdLjO6Bl47+Vfp46C7LLJfyDolCvAqGCHy5hvsQ=",
       "url": "_framework\/MacroMunch.pdb"
     },
     {
-      "hash": "sha256-HuD+SWJkiqQjJbVOEfzDNQtTV9fE1d4x08CeW7hbDbc=",
+      "hash": "sha256-0TRCbxyBj2r\/\/1X5BF8uY4w4larwPgYlfMPmRN31mG4=",
       "url": "_framework\/blazor.boot.json"
     }
   ],
-  "version": "gvRItHs3"
+  "version": "dK+5Q8qQ"
 };
