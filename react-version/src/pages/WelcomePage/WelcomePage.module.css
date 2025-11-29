@@ -1,0 +1,79 @@
+/* src/pages/WelcomePage.module.css */
+
+/* 1. MacroMunch header ~120px from top */
+.screen {
+  display: flex;
+  flex-direction: column;
+  padding-top: 120px;
+}
+
+/* 2. Title group (H1 + caption) */
+.titleGroup {
+  text-align: center;
+  margin-bottom: var(--space-16); /* 3. 64px below the tagline to "Log in or Sign Up" */
+}
+
+/* H1 = MacroMunch */
+.appName {
+  letter-spacing: 0.04em;
+}
+
+/* 2. 16px between H1 and tagline */
+.tagline {
+  margin-top: 16px;
+}
+
+/* H3: "Log in or Sign Up" */
+.authTitle {
+  margin-bottom: var(--space-0); /* we’ll let the form handle spacing below */
+}
+
+/* 4 & 5. Email input 16px below H3, button 16px below input */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;    /* space between email field and button */
+  margin-top: 16px; /* space between H3 and email field */
+}
+
+/* TextInput handles its internal label → input spacing,
+   so we don’t need extra here */
+.field {
+  /* left empty for now */
+}
+
+/* 6 & 7. OR & Continue with spacing */
+.divider {
+  margin: 32px 0; /* 32px above and below "OR" */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dividerText {
+  letter-spacing: 0.13 em;
+  text-transform: none;
+  opacity: 1;
+}
+
+/* "Continue with" text: 32px above social buttons.
+   We already get 32px above from .divider's margin-bottom,
+   so we just need 32px below to the buttons. */
+.continueWith {
+  text-align: center;
+  margin-bottom: var(--space-8);
+  color: #4ade80;
+}
+
+/* Social buttons row */
+.socialRow {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+} 
+
+.errorText {
+  margin-top: 8px;
+  color: #f97373; /* soft red for errors */
+  text-align: left;
+}
