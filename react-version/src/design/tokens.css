@@ -1,0 +1,42 @@
+:root {
+    /* ------------- COLORS ------------- */
+    --color-bg: #0F0F0F;
+    --color-text-primary: #F2F2F2;
+    --color-text-secondary: #B0B0B0;
+    --color-accent: #4ADE80;
+    --color-accent-dark: #22C55E;
+    --color-surface: #1F2933;
+    --color-overlay: rgba(15, 15, 15, 0.96);
+  
+    /* ------------- SPACING (8-based scale) ------------- */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;   /* foundational gutter */
+    --space-5: 20px;
+    --space-6: 24px;   /* common section spacing */
+    --space-8: 32px;   /* used under subtitles + dividers */
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+  
+    /* ------------- RADII ------------- */
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-pill: 999px;
+  
+    /* ------------- SHADOWS ------------- */
+    --shadow-soft: 0 4px 16px rgba(0,0,0,0.25);
+    --shadow-float: 0 8px 24px rgba(0,0,0,0.28);
+  
+    /* ------------- FONTS ------------- */
+    --font-h1-size: 36px;
+    --font-h2-size: 28px;
+    --font-h3-size: 24px;
+    --font-h4-size: 20px;
+    --font-h5-size: 18px;
+    --font-h6-size: 16px;
+    --font-body-size: 16px;
+    --font-caption-size: 14px;
+  }  

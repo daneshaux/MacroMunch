@@ -1,0 +1,195 @@
+.screen {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 24px 0px 120px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+  
+  /* Header */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(74, 222, 128, 0.9),
+    #022c22 60%,
+    #0f0f0f 100%
+  );
+  border: 2px solid var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+}
+
+.headerText h1,
+.headerText p {
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.email {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+  word-break: break-all;
+  white-space: normal;     /* <-- This allows wrapping */
+  overflow-wrap: break-word;
+  opacity: 0.9;
+}
+
+  
+  /* Sections */
+  
+  .sections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  /* Card */
+  
+  .card {
+    width: 100%;
+    padding: var(--space-4);
+    border-radius: 16px;
+    border: 1px solid #1f2933;
+    background: radial-gradient(circle at top left, #020617, #020617, #050816);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+  }
+  
+  .cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+  }
+  
+  .cardBody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  
+  /* Tags */
+  
+  .tagList {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
+    margin-top: 8px;
+  }
+  
+  .tag {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(74, 222, 128, 0.5);
+    background: rgba(15, 23, 42, 0.9);
+  }
+  
+  /* Link rows (settings) */
+  
+  .linkRow {
+    width: 100%;
+    padding: 8px 0;
+    text-align: left;
+    background: transparent;
+    border: none;
+    color: #f2f2f2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .linkRow + .linkRow {
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+  }
+  
+  .danger {
+    color: #f87171;
+  } 
+
+  /* ── Static rows (Goal, Age, Height, Weight) ───────────── */
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.label {
+  color: #e5e7eb;
+  opacity: 0.7;
+}
+
+.value {
+  color: #f9fafb;
+  text-align: right;
+}
+
+/* ── Clickable rows (Activity level, Meals per day) ───── */
+
+.rowButton {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.valueWithChevron {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.rowRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* inherit label/value colors for clickable row */
+.rowButton .label {
+  color: #e5e7eb;
+  opacity: 0.8;
+}
+
+.rowButton .value {
+  color: #f9fafb;
+  text-align: right;
+}
+
+/* Chevron alignment */
+.chevron {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: #9ca3af;
+}

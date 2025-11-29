@@ -1,0 +1,113 @@
+/* src/pages/EditMeals/EditMeals.module.css */
+
+.screen {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 24px 0px 24px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* --- HEADER --- */
+  
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .header p {
+    text-align: left;
+  }
+  
+  
+  .subtitle {
+    margin-top: 8px; /* ⬅️ extra space between H1 + caption */
+    color: #9ca3af;
+  }
+  
+  /* --- CONTENT --- */
+  
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+  
+  /* --- MEAL OPTIONS --- */
+  
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .option {
+    width: 100%;
+    text-align: left;
+    border-radius: 16px;
+    padding: 12px 16px;
+    border: 1px solid #1f2933;
+    background: #020617;
+  
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+  
+    /* main label contrast */
+    color: #f2f2f2;
+  }
+  
+  .option .h4,
+  .option h4 {
+    color: #f2f2f2;
+  }
+  
+  .option .caption {
+    color: #9ca3af;
+  }
+  
+  .selected {
+    border-color: #4ade80;
+    background: radial-gradient(circle at 0% 0%, #022c22 0, #020617 55%, #000000 100%);
+    box-shadow: 0 0 0 1px rgba(74, 222, 128, 0.32);
+  }
+  
+  /* --- ACTIONS (PRIMARY + CANCEL) --- */
+  
+  .actions {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* ⬅️ spacing between Save + Cancel */
+  }
+  
+  /* secondary-style Cancel button */
+  .cancel {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #4ade80;
+    font-weight: 600;
+    font-size: 0.95rem;
+    background: transparent;
+    color: #4ade80;
+    text-align: center;
+    cursor: pointer;
+  }
+  
+  /* small safety so it doesn’t shrink on tiny screens */
+  .cancel:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+  
+  /* --- ERROR --- */
+  
+  .error {
+    margin-top: 8px;
+    color: #f97373;
+  }  

@@ -1,0 +1,65 @@
+/* src/components/OptionPill/OptionPill.module.css */
+
+.pill {
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(15, 23, 42, 0.9);
+    color: #f2f2f2;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+  
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      transform 0.08s ease,
+      color 0.15s ease;
+  }
+  
+  .pill:hover {
+    border-color: rgba(74, 222, 128, 0.7);
+  }
+  
+  .pill:active {
+    transform: translateY(1px) scale(0.98);
+  }
+  
+  /* Sizes */
+  .sm {
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+  
+  .md {
+    padding: 6px 14px;
+  }
+  
+  .lg {
+    padding: 8px 18px;
+    font-size: 0.95rem;
+  }
+  
+  /* Selected state = premium green glow */
+  .selected {
+    background: radial-gradient(
+      circle at top left,
+      rgba(74, 222, 128, 0.25),
+      rgba(15, 23, 42, 0.95)
+    );
+    border-color: #4ade80;
+    box-shadow:
+      0 0 0 1px rgba(74, 222, 128, 0.4),
+      0 10px 25px rgba(0, 0, 0, 0.6);
+    color: #f9fafb;
+  }
+  
+  .label {
+    white-space: nowrap;
+  }
+

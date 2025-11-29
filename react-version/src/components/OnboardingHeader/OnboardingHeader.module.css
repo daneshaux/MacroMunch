@@ -1,0 +1,87 @@
+/* src/components/OnboardingHeader/OnboardingHeader.module.css */
+
+.header {
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 24px 16px 12px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.backButton {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backIcon {
+  font-size: 22px;
+  color: #f9fafb;
+}
+
+.titleWrapper {
+  flex: 1;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.rightSpacer {
+  width: 26px; /* roughly backIcon width so the title stays centered */
+}
+
+/* Progress bar */
+
+.progressWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.progressBar {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.segment {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(31, 41, 55, 0.9);
+}
+
+.segmentCompleted {
+  background: linear-gradient(90deg, #4bf2b8, #2ad1ff);
+}
+
+.segmentCurrent {
+  background: linear-gradient(90deg, #4bf2b8, #9e7dff);
+  box-shadow: 0 0 10px rgba(75, 242, 184, 0.5);
+}
+
+.stepLabel {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}

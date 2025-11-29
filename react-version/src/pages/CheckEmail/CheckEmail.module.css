@@ -1,0 +1,64 @@
+/* src/pages/CheckEmail/CheckEmail.module.css */
+
+.screen {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    margin: 0 auto;
+  
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  
+    padding: 120px var(--space-4) var(--space-6);
+    box-sizing: border-box;
+  }
+  
+  .content {
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  
+  .iconWrapper {
+    margin-bottom: var(--space-4);
+  }
+  
+  .iconCircle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle at 30% 20%,
+      rgba(74, 222, 128, 0.9),
+      #022c22 60%,
+      #0f0f0f 100%
+    );
+    border: 2px solid var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .mailIcon {
+    font-size: 32px;
+    color: #f2f2f2;
+  }
+  
+  .subtitle {
+    max-width: 320px;
+  }
+  
+  .email {
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+  
+  .hint {
+    margin-bottom: 0;
+    max-width: 320px;
+  }  

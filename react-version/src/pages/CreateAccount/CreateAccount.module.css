@@ -1,0 +1,41 @@
+.screen { padding-top: 40px; }
+
+.header { text-align: center; margin-bottom: 24px; }
+
+.form {
+  width: 100%;
+  display: grid;
+  gap: 24px;
+}
+
+.error {
+  margin-top: -8px;
+  color: #f97373;
+  text-align: left;
+}
+
+/* actions rows */
+.actions {
+  display: flex;
+  justify-content: center;
+}
+
+.actionsTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* simple secondary button */
+.secondaryButton {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #374151;
+  background: transparent;
+  color: #f2f2f2;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+.secondaryButton:hover { opacity: 0.9; transform: translateY(-1px); }
+.secondaryButton:active { transform: translateY(0); }
