@@ -36,6 +36,7 @@ import OnboardingEatingStyles from "@/pages/OnboardingEatingStyles/OnboardingEat
 import OnboardingSpiceLevel from "@/pages/OnboardingSpiceLevel/OnboardingSpiceLevel";
 import OnboardingFlavorProfiles from "@/pages/OnboardingFlavorProfiles/OnboardingFlavorProfiles";
 import OnboardingLoading from "@/pages/OnboardingLoading/OnboardingLoading";
+import Recipe from "./pages/Recipe/Recipe";
 
 const DEV_BYPASS_AUTH = true;
 
@@ -215,6 +216,9 @@ function App() {
 
           {/* Recipes page */}
           <Route path="/recipes" element={<Recipes />} />
+
+           {/* Recipe page */}
+          <Route path="/recipe" element={<Recipe />} />
 
           {/* Profile page */}
           <Route path="/profile" element={<Profile />} />

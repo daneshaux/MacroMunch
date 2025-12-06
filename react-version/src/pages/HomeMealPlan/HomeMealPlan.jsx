@@ -94,7 +94,7 @@ function HomeMealPlan({ firstName = "there" }) {
 
         <div className={styles.planList}>
           {MEAL_PLAN.map((meal) => (
-            <article key={meal.id} className={styles.mealCard}>
+            <article onClick={() => navigate("/recipe")} key={meal.id} className={styles.mealCard}>
               <div className={styles.mealMedia}>
                 <img src={meal.image} alt={meal.title} />
               </div>
