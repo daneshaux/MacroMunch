@@ -90,7 +90,7 @@ function OnboardingFlavorProfiles() {
 
   return (
     <main className={styles.screen}>
-      <OnboardingHeader currentStep={6} totalSteps={6} onBack={handleBack} />
+      <OnboardingHeader currentStep={7} totalSteps={7} onBack={handleBack} />
 
       <section className={styles.content}>
         <div className={styles.questionBlock}>

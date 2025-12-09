@@ -116,6 +116,12 @@
     color: #cbd5f5;
   }
 
+  .alignLeft .content,
+  .alignLeft .textContent {
+    align-items: flex-start;
+    text-align: left;
+  }
+
   @media (max-width: 390px) {
     .card {
       padding: 18px 14px;

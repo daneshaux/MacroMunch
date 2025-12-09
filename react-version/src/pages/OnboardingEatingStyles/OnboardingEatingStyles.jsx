@@ -102,7 +102,7 @@ function OnboardingEatingStyles() {
 
   return (
     <main className={styles.screen}>
-      <OnboardingHeader currentStep={4} totalSteps={6} onBack={handleBack} />
+      <OnboardingHeader currentStep={5} totalSteps={7} onBack={handleBack} />
 
       <section className={styles.content}>
         <div className={styles.questionBlock}>

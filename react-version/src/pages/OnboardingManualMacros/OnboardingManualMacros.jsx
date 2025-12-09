@@ -28,7 +28,7 @@ function OnboardingManualMacros() {
 
   return (
     <main className={styles.screen}>
-      <OnboardingHeader currentStep={1} totalSteps={6} onBack={handleBack} />
+      <OnboardingHeader currentStep={2} totalSteps={7} onBack={handleBack} />
 
       <section className={styles.content}>
         <div className={styles.questionBlock}>
