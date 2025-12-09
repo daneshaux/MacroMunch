@@ -2,6 +2,7 @@ import { apiFetch } from "./api";
 import { mapActivity, mapSexForApi, dobToAge } from "./mappers";
 import { supabase } from "@/lib/supabaseClient";
 
+//OLD: Go backend helpers
 const API_BASE = import.meta.env.VITE_API_BASE_URL; // "https://macromunchservices.onrender.com"
 
 async function apiRequest(path, method = "GET", body) {
@@ -53,9 +54,68 @@ async function apiRequest(path, method = "GET", body) {
   }
 }
 
-// 🔹 Get current user profile (GET /api/v1/users/)
+// NEW: Supabase native helpers
 export async function getCurrentUserProfile() {
-  return apiRequest("/api/v1/users/", "GET");
+  // 1) Get the current auth user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      ok: false,
+      error: userError?.message || "Not signed in.",
+    };
+  }
+
+  // 2) Fetch their profile row
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) {
+    console.error("[Profiles] getCurrentUserProfile error", error);
+    return { ok: false, error: error.message };
+  }
+
+  // 🔥 keep shape the same as before: data = profile row
+  return { ok: true, data };
+}
+
+// NEW: Small helper to get name / email / initial for the UI
+export async function getAuthProfileSummary() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data?.user) {
+    return { ok: false, error: error?.message || "Not signed in." };
+  }
+
+  const user = data.user;
+
+  const first =
+    user.user_metadata?.first_name ||
+    user.user_metadata?.firstName ||
+    "";
+  const last =
+    user.user_metadata?.last_name ||
+    user.user_metadata?.lastName ||
+    "";
+
+  const displayName = [first, last].filter(Boolean).join(" ") || user.email;
+  const email = user.email || "";
+  const initial = (first || email || "?").trim().charAt(0).toUpperCase();
+
+  return {
+    ok: true,
+    data: {
+      displayName,
+      email,
+      initial,
+    },
+  };
 }
 
 // 🔹 Generic profile update (PUT /api/v1/users/)
@@ -64,29 +124,150 @@ export async function updateUserProfile(partialProfile) {
   return apiRequest("/api/v1/users/", "PUT", partialProfile);
 }
 
-// 🔹 Specific helper for mealsPerDay
-export async function updateMealsPerDay(meals) {
-  // API docs say: "mealsPerDay" in request body
-  return updateUserProfile({ mealsPerDay: meals });
+// NEW: mealsPerDay helper
+export async function updateMealsPerDay(mealsPerDay) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, error: userError?.message || "Not signed in." };
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      meals_per_day: mealsPerDay,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Profiles] updateMealsPerDay error", error);
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, data };
 }
 
-// 🔹 Specific helper for activityLevel
+// NEW: activityLevel helper
 export async function updateActivityLevel(activity) {
-  // `activity` should be one of:
-  // "sedentary" | "lightly_active" | "moderately_active" | "very_active"
-  // (whatever your ActivityLevel component uses)
-  return callApi("/api/v1/users/", "PUT", {
-    activityLevel: activity,
-  });
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, error: userError?.message || "Not signed in." };
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      activity_level: activity,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Profiles] updateActivityLevel error", error);
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, data };
 }
 
-// 🔹 Specific helper for goal
+// NEW: Specific helper for goal
 export async function updateGoal(goal) {
-  // backend expects "goal": "maintain" | "lose" | "gain"
-  return authFetch("/users/", {
-    method: "PUT",
-    body: JSON.stringify({ goal }),
-  });
+  // 1) Get current user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      ok: false,
+      error: userError?.message || "Not signed in.",
+    };
+  }
+
+  // 2) Update their profile
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      goal,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Profiles] updateGoal error", error);
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, data };
+}
+
+// Generic helper to patch the current user's profile row in Supabase
+async function updateProfilePatch(patch) {
+  // 1) Get current user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return {
+      ok: false,
+      error: userError?.message || "Not signed in.",
+    };
+  }
+
+  // 2) Update their profile row by user_id
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({
+      ...patch,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[Profiles] updateProfilePatch error", error);
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, data };
+}
+
+// 🔹 Height (cm)
+export async function updateHeightCm(heightCm) {
+  return updateProfilePatch({ height_cm: Number(heightCm) });
+}
+
+// 🔹 Weight (kg)
+export async function updateWeightKg(weightKg) {
+  return updateProfilePatch({ weight_kg: Number(weightKg) });
+}
+
+// 🔹 Date of birth (YYYY-MM-DD)
+export async function updateDob({ year, month, day }) {
+  // ensure 2-digit month/day
+  const mm = String(month).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  const dob = `${year}-${mm}-${dd}`; // Supabase 'date' column format
+
+  return updateProfilePatch({ dob });
 }
 
 export async function createUserProfile({

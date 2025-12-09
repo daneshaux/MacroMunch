@@ -3,6 +3,7 @@
 import { useState } from "react";
 import styles from "./WelcomePage.module.css";
 import TextInput from "@/components/TextInput/TextInput";
+import PasswordInput from "@/components/PasswordInput/PasswordInput";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
 import SocialButton from "@/components/SocialButton/SocialButton";
 import { FaGoogle, FaApple, FaFacebookF } from "react-icons/fa";
@@ -75,14 +76,18 @@ function WelcomePage({ onNewUser = () => {}, onLoggedIn = () => {} }) {
             type="email"
             placeholder="Email"
             value={email}
-            onChange={setEmail}
+            onChange={(value) => {
+              setEmail(value);
+              setShowPasswordStep(false); // 🔁 go back to step 1 when email changes
+              setPassword("");            // clear password
+              setError("");               // clear error
+            }}
           />
 
           {showPasswordStep && (
-            <TextInput
+            <PasswordInput
+              id="welcome-password"
               label="Password"
-              type="password"
-              placeholder="Enter your password"
               value={password}
               onChange={setPassword}
             />

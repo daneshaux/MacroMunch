@@ -1,12 +1,35 @@
+// src/components/AppHeader/AppHeader.jsx
+import { useEffect, useState } from "react";
 import styles from "./AppHeader.module.css";
 import { FaBell } from "react-icons/fa";
+import { getAuthProfileSummary } from "@/lib/userApi";
 
 function AppHeader({
   firstName = "",
   onProfileClick = () => {},
   onNotificationsClick = () => {},
 }) {
-  const initial = firstName?.trim()?.charAt(0)?.toUpperCase() || "M"; // M for MacroMunch / mystery
+  // Start with whatever parent gave us (or "M")
+  const [initial, setInitial] = useState(
+    firstName?.trim()?.charAt(0)?.toUpperCase() || "M"
+  );
+
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      const res = await getAuthProfileSummary();
+      if (!mounted) return;
+
+      if (res.ok && res.data?.initial) {
+        setInitial(res.data.initial);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <header className={styles.header}>

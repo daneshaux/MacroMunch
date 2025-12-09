@@ -37,7 +37,7 @@ import OnboardingSpiceLevel from "@/pages/OnboardingSpiceLevel/OnboardingSpiceLe
 import OnboardingFlavorProfiles from "@/pages/OnboardingFlavorProfiles/OnboardingFlavorProfiles";
 import OnboardingLoading from "@/pages/OnboardingLoading/OnboardingLoading";
 
-const DEV_BYPASS_AUTH = true;
+const DEV_BYPASS_AUTH = false;
 
 function App() {
   const location = useLocation();

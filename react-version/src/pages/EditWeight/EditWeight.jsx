@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 
 import styles from "./EditWeight.module.css";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
+import { getCurrentUserProfile, updateWeightKg } from "@/lib/userApi";
+import { lbsToKg, kgToLbs } from "@/lib/conversions";
 
 const MIN_WEIGHT = 60;
 const MAX_WEIGHT = 400;
@@ -16,14 +18,53 @@ function clampWeight(value) {
 function EditWeight() {
   const navigate = useNavigate();
 
-  // In the future this will come from the real profile
-  const initialWeight = 165;
-
-  const [weight, setWeight] = useState(initialWeight);
-  const [inputWeight, setInputWeight] = useState(String(initialWeight));
+  const [initialWeight, setInitialWeight] = useState(null); // in lbs
+  const [weight, setWeight] = useState(MIN_WEIGHT);
+  const [inputWeight, setInputWeight] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const isDirty = weight !== initialWeight;
+  const isDirty =
+    initialWeight !== null && weight !== initialWeight;
+
+  // Load from Supabase the first time
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfile() {
+      setLoading(true);
+      const res = await getCurrentUserProfile();
+      if (!isMounted) return;
+
+      if (res.ok && res.data) {
+        const profile = res.data;
+        const kg = profile.weight_kg ?? 0;
+
+        // If we have something stored, convert to lbs; else fallback.
+        const lbsRaw = kg ? kgToLbs(kg) : 165;
+        const lbs = clampWeight(Math.round(lbsRaw || 165));
+
+        setInitialWeight(lbs);
+        setWeight(lbs);
+        setInputWeight(String(lbs));
+      } else {
+        console.warn("Could not load profile:", res.error);
+        // Fallback to your old 165 default
+        const fallback = 165;
+        setInitialWeight(fallback);
+        setWeight(fallback);
+        setInputWeight(String(fallback));
+      }
+
+      setLoading(false);
+    }
+
+    loadProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Keep input in sync when weight changes from +/- buttons
   useEffect(() => {
@@ -63,10 +104,20 @@ function EditWeight() {
     }
 
     setSaving(true);
-    // TODO: hook up to real API later
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    setError("");
+
+    const newKg = lbsToKg(weight);
+
+    const res = await updateWeightKg(newKg);
+
     setSaving(false);
-    navigate(-1);
+
+    if (!res.ok) {
+      setError(res.error || "Could not update weight.");
+      return;
+    }
+
+    navigate("/profile");
   }
 
   function handleCancel() {
@@ -83,68 +134,78 @@ function EditWeight() {
       </header>
 
       <section className={styles.content}>
-        {/* Big number */}
-        <div className={styles.weightDisplay}>
-          <span className={styles.weightNumber}>{weight}</span>
-          <span className={styles.weightUnit}>lb</span>
-        </div>
+        {loading ? (
+          <p className="caption">Loading your weight…</p>
+        ) : (
+          <>
+            {/* Big number */}
+            <div className={styles.weightDisplay}>
+              <span className={styles.weightNumber}>{weight}</span>
+              <span className={styles.weightUnit}>lb</span>
+            </div>
 
-        {/* +/- controls */}
-        <div className={styles.adjustRow}>
-          <button
-            type="button"
-            className={styles.adjustButton}
-            onClick={handleMinus}
-          >
-            − 1
-          </button>
-          <button
-            type="button"
-            className={styles.adjustButton}
-            onClick={handlePlus}
-          >
-            + 1
-          </button>
-        </div>
+            {/* +/- controls */}
+            <div className={styles.adjustRow}>
+              <button
+                type="button"
+                className={styles.adjustButton}
+                onClick={handleMinus}
+              >
+                − 1
+              </button>
+              <button
+                type="button"
+                className={styles.adjustButton}
+                onClick={handlePlus}
+              >
+                + 1
+              </button>
+            </div>
 
-        {/* Input field */}
-        <div className={styles.inputBlock}>
-          <p className="body-text">Or type your weight</p>
-          <input
-            type="number"
-            inputMode="decimal"
-            className={styles.input}
-            value={inputWeight}
-            onChange={handleInputChange}
-            onBlur={syncFromInput}
-          />
-          <p className="caption">
-            You can always refine this later as your weight changes.
-          </p>
-        </div>
+            {/* Input field */}
+            <div className={styles.inputBlock}>
+              <p className="body-text">Or type your weight</p>
+              <input
+                type="number"
+                inputMode="decimal"
+                className={styles.input}
+                value={inputWeight}
+                onChange={handleInputChange}
+                onBlur={syncFromInput}
+              />
+              <p className="caption">
+                You can always refine this later as your weight changes.
+              </p>
+            </div>
 
-        {/* Actions */}
-        <div className={styles.actions}>
-          <PrimaryButton
-            type="button"
-            onClick={handleSave}
-            disabled={!isDirty || saving}
-            label={
-              isDirty
-                ? saving
-                  ? "Saving…"
-                  : "Save changes"
-                : "Saved"
-            }
-          />
-          <button
-            type="button"
-            className={`${styles.cancel} body-text`}
-            onClick={handleCancel}
-          >
-            Cancel
-          </button>
-        </div>
+            {error && (
+              <p className={`caption ${styles.error}`}>{error}</p>
+            )}
+
+            {/* Actions */}
+            <div className={styles.actions}>
+              <PrimaryButton
+                type="button"
+                onClick={handleSave}
+                disabled={!isDirty || saving || loading}
+                label={
+                  isDirty
+                    ? saving
+                      ? "Saving…"
+                      : "Save changes"
+                    : "Saved"
+                }
+              />
+              <button
+                type="button"
+                className={`${styles.cancel} body-text`}
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
       </section>
     </main>
   );

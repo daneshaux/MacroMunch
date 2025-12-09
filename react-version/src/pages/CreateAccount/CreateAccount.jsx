@@ -11,9 +11,10 @@ import HeightInput from "@/components/HeightInput/HeightInput";
 import PasswordInput from "@/components/PasswordInput/PasswordInput";
 import ActivityLevel from "@/components/ActivityLevel/ActivityLevel";
 
-import { signUpWithPassword } from "@/lib/auth";
+import { signUpWithPassword, upsertProfile } from "@/lib/auth";
 import { lbsToKg, ftInToCm } from "@/lib/conversions";
-import { createUserProfile } from "@/lib/userApi";
+// We’re not using the old backend right now:
+// import { createUserProfile } from "@/lib/userApi";
 
 // --- static data ---
 const genders = [
@@ -108,61 +109,61 @@ function CreateAccount({
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
-    const err = validateStep2();
-    if (err) { setError(err); return; }
-    setError("");
+  e.preventDefault();
+  const err = validateStep2();
+  if (err) { setError(err); return; }
+  setError("");
 
-    // 1) Sign up with Supabase (this will send confirmation email if enabled)
-    const signUp = await signUpWithPassword({
-      email: email.trim(),
-      password,
-      firstName: first.trim(),
-      lastName: last.trim(),
-    });
+  // 1) Sign up with Supabase
+  const signUp = await signUpWithPassword({
+    email: email.trim(),
+    password,
+    firstName: first.trim(),
+    lastName: last.trim(),
+  });
 
-    if (!signUp.ok) {
-      setError(
-        /already/i.test(signUp.error)
-          ? "This email already has an account. Please log in instead."
-          : (signUp.error || "Could not create account.")
-      );
-      return;
-    }
+  if (!signUp.ok) {
+    setError(
+      /already/i.test(signUp.error)
+        ? "This email already has an account. Please log in instead."
+        : (signUp.error || "Could not create account.")
+    );
+    return;
+  }
 
-    // 🔍 If SupaBass did NOT give us a session, that usually means
-    // email confirmation is required. Send them to the Check Email page.
-    const hasSession = !!signUp.data?.session;
-    if (!hasSession) {
-      onNeedEmailConfirm(email.trim());
-      return;
-    }
+  const { user, session } = signUp;
 
-    // 2) If we DO have a session, finish by creating the backend profile
-    const weightKg = lbsToKg(weightLbs);
-    const heightCm = ftInToCm(heightFt, heightIn);
+  // If email confirmation were on, this is where we'd send them to "Check Email".
+  // For now (confirmation off), we should always have a session.
+  if (!session) {
+    onNeedEmailConfirm(email.trim());
+    return;
+  }
 
-    const api = await createUserProfile({
-      firstName: first.trim(),
-      lastName: last.trim(),
-      gender,
-      dobYear,
-      dobMonth,
-      dobDay,
-      heightCm,
-      weightKg,
-      activity,
-      goal: "maintain",
-      dietaryFlags: ["none"],
-      mealsPerDay: 3,
-    });
+  // 2) If we DO have a session, finish by creating the backend profile
+const weightKg = lbsToKg(weightLbs);
+const heightCm = ftInToCm(heightFt, heightIn);
 
-    if (!api.ok) {
-      setError(api.error || "Failed to create user profile.");
-      return;
-    }
+const dob = `${dobYear}-${dobMonth.padStart(2, "0")}-${dobDay.padStart(2, "0")}`;
 
-    onCreated({ user: signUp.data?.user, profile: api.data?.user });
+const profileRes = await upsertProfile({
+  userId: signUp.user.id,
+  email: email.trim(),
+  dob,
+  weight_kg: weightKg,
+  height_cm: heightCm,
+  activity_level: activity,
+  metabolism_sex: gender,
+  goal: "maintain",
+  meals_per_day: 3,
+});
+
+if (!profileRes.ok) {
+  setError(profileRes.error || "Failed to create user profile.");
+  return;
+}
+
+onCreated({ user: signUp.user, profile: profileRes.profile });
   }
 
   // 🧱 Normal 2-step form
