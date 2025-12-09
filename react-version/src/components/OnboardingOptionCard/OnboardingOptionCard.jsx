@@ -11,6 +11,7 @@ function OnboardingOptionCard({
   selected = false,
   className = "",
   disabled = false,
+  alignLeft = false,
   children,
   style,
   ...props
@@ -20,6 +21,7 @@ function OnboardingOptionCard({
     selected && styles.selected,
     disabled && styles.disabled,
     backgroundImage && styles.withBackground,
+    alignLeft && styles.alignLeft,
     className,
   ]
     .filter(Boolean)

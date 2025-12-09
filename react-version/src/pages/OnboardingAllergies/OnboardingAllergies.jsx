@@ -90,7 +90,7 @@ function OnboardingAllergies() {
 
   return (
     <main className={styles.screen}>
-      <OnboardingHeader currentStep={3} totalSteps={6} onBack={handleBack} />
+      <OnboardingHeader currentStep={4} totalSteps={7} onBack={handleBack} />
 
       <section className={styles.content}>
         <div className={styles.questionBlock}>
