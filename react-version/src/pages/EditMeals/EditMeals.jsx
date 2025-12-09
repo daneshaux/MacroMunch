@@ -26,8 +26,10 @@ function EditMealsPage() {
 
       if (res.ok && res.data) {
         const user = res.data;
-        // API returns "mealsperday" in the response example
-        const apiMeals = user.mealsperday ?? user.mealsPerDay ?? 3;
+
+        // ✅ Supabase column: meals_per_day
+        const apiMeals = user.meals_per_day ?? 3;
+
         setCurrentMeals(apiMeals);
         setMeals(apiMeals);
       } else {
@@ -65,7 +67,6 @@ function EditMealsPage() {
       return;
     }
 
-    // You could show a toast here if you want
     navigate("/profile");
   }
 
@@ -78,11 +79,11 @@ function EditMealsPage() {
   return (
     <main className={styles.screen}>
       <header className={styles.header}>
-            <h1 className="h1">Meals per day</h1>
-            <p className={`caption ${styles.subtitle}`}>
-                Choose how many meals you prefer each day. You can change this any time.
-            </p>
-        </header>
+        <h1 className="h1">Meals per day</h1>
+        <p className={`caption ${styles.subtitle}`}>
+          Choose how many meals you prefer each day. You can change this any time.
+        </p>
+      </header>
 
       <section className={styles.content}>
         {loading ? (
