@@ -94,6 +94,11 @@
   color: #9ca3af;
 }
 
+.error {
+  margin-top: 8px;
+  color: #f97373;
+}
+
 .footer {
   margin-top: auto;
   display: flex;

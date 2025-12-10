@@ -1,5 +1,5 @@
 // src/pages/OnboardingSpiceLevel/OnboardingSpiceLevel.jsx
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import OnboardingHeader from "@/components/OnboardingHeader/OnboardingHeader";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
@@ -22,6 +22,13 @@ function OnboardingSpiceLevel() {
   const navigate = useNavigate();
   const { state, setSpiceLevel } = useOnboarding();
 
+  // 🔹 On first visit, if we don't have a spiceLevel yet, default to 50 (Medium)
+  useEffect(() => {
+    if (state.spiceLevel == null) {
+      setSpiceLevel(50);
+    }
+  }, [state.spiceLevel, setSpiceLevel]);
+
   const sliderValue = clamp(state.spiceLevel ?? 50);
 
   function handleBack() {
@@ -29,6 +36,7 @@ function OnboardingSpiceLevel() {
   }
 
   function handleSkip() {
+    // 🔹 Explicitly clear their preference
     setSpiceLevel(null);
     goNext();
   }
