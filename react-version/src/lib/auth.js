@@ -97,7 +97,7 @@ export async function upsertProfile({
   activity_level,
   metabolism_sex,
   goal = "maintain",
-  meals_per_day = 3,
+  meals_per_day = 4,
 }) {
   console.log("[Profiles] upsertProfile for", userId);
 

@@ -4,7 +4,7 @@ import OnboardingHeader from "@/components/OnboardingHeader/OnboardingHeader";
 import OnboardingOptionCard from "@/components/OnboardingOptionCard/OnboardingOptionCard";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { updateDietSettings, markOnboardingComplete } from "@/lib/userApi";
+import { updateDietSettings, markOnboardingComplete,generateMealPlanForCurrentUser} from "@/lib/userApi";
 
 import creamyBg from "@/assets/onboarding/flavorProfiles/creamy.webp";
 import savoryBg from "@/assets/onboarding/flavorProfiles/savory.webp";
@@ -47,47 +47,54 @@ function OnboardingFlavorProfiles() {
     }
   }
 
-  // Allow overriding flavorProfiles (for Skip)
-  async function finalizeAndGo(overrideFlavorProfiles) {
-    const flavorProfilesToSave =
-      overrideFlavorProfiles !== undefined
-        ? overrideFlavorProfiles
-        : state.flavorProfiles;
-
-    // 1) Save diet settings for this user
+    async function finalizeAndGo() {
+    // 1) Build payload from onboarding state
     const payload = {
       dietaryPreferences: state.dietaryPreferences,
       allergies: state.allergies,
       eatingStyles: state.eatingStyles,
       spiceLevel: state.spiceLevel,
-      flavorProfiles: flavorProfilesToSave || [],
+      numericSpice: state.spiceLevel, // you were already logging both
+      flavorProfiles: state.flavorProfiles,
     };
 
+    console.log("[Onboarding] finalizeAndGo payload:", payload);
+
+    // 2) Save diet settings
     const dietRes = await updateDietSettings(payload);
+    console.log("[Onboarding] updateDietSettings result:", dietRes);
     if (!dietRes.ok) {
       console.error("Failed to save diet settings:", dietRes.error);
       // optional: show toast
       return;
     }
 
-    // 2) Mark onboarding as complete
-    const completeRes = await markOnboardingComplete();
-    if (!completeRes.ok) {
-      console.error("Failed to mark onboarding complete:", completeRes.error);
-      // optional: still let them through
+    // 3) Generate + save meal plan for this user
+    const planRes = await generateMealPlanForCurrentUser();
+    console.log("[Onboarding] generateMealPlanForCurrentUser result:", planRes);
+    if (!planRes.ok) {
+      console.error("Failed to generate meal plan:", planRes.error);
+      // optional: still continue or block here depending on UX
+      // return;
     }
 
-    // 3) Mark plan ready in context for this session
-    setPlanReady(true);
+    // 4) Mark onboarding as complete
+    const completeRes = await markOnboardingComplete();
+    console.log("[Onboarding] markOnboardingComplete result:", completeRes);
+    if (!completeRes.ok) {
+      console.error("Failed to mark onboarding complete:", completeRes.error);
+      // optional: toast, but we can still proceed
+    }
 
-    // 4) Go to main app
-    navigate("/meal-plan"); // or "/home"
+    // 5) Flip in-memory flag + go to meal plan
+    setPlanReady(true);
+    navigate("/meal-plan");
   }
 
   function handleSkip() {
-    // If they skip, we still save “no extra flavors”
+    // If they skip, we still save “no extra flavors” and finish onboarding
     setFlavorProfiles([]);
-    finalizeAndGo([]); // explicitly save empty list
+    finalizeAndGo();
   }
 
   function handleContinue() {
