@@ -54,7 +54,7 @@ function Profile() {
   const user = {
     goalLabel: "Maintain weight",
     activityLabel: "Lightly active",
-    mealsPerDay: 3,
+    mealsPerDay: 4,
     age: 29,
     heightFeet: 5,
     heightInches: 5,
@@ -68,7 +68,7 @@ function Profile() {
   const email = headerInfo.email || "demo@macromunch.com";
   const initials = headerInfo.initial || "MM";
 
-  const maxDietaryChips = 3;
+  const maxDietaryChips = 4;
   const visibleDietaryFlags = user.dietaryFlags.slice(0, maxDietaryChips);
   const extraCount = user.dietaryFlags.length - visibleDietaryFlags.length;
 

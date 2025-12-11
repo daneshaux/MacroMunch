@@ -55,37 +55,6 @@ async function apiRequest(path, method = "GET", body) {
   }
 }
 
-// NEW: Supabase native helpers
-export async function getCurrentUserProfile() {
-  // 1) Get the current auth user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return {
-      ok: false,
-      error: userError?.message || "Not signed in.",
-    };
-  }
-
-  // 2) Fetch their profile row
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
-  if (error) {
-    console.error("[Profiles] getCurrentUserProfile error", error);
-    return { ok: false, error: error.message };
-  }
-
-  // 🔥 keep shape the same as before: data = profile row
-  return { ok: true, data };
-}
-
 // NEW: Small helper to get name / email / initial for the UI
 export async function getAuthProfileSummary() {
   const { data, error } = await supabase.auth.getUser();
@@ -592,6 +561,215 @@ export async function updateDietSettings({
   return { ok: true, data };
 }
 
+// NEW Small helper to shuffle an array in-place
+function shuffleArray(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = copy[i];
+    copy[i] = copy[j];
+    copy[j] = tmp;
+  }
+  return copy;
+}
+
+// 🔹 Helper: pick 3 meals + 1 snack from the candidate list
+function buildSimpleDailyLineup(meals, profile) {
+  try {
+    if (!Array.isArray(meals) || meals.length === 0) return [];
+
+    // Bucket by meal_type
+    const courseBuckets = {
+      breakfast: [],
+      lunch: [],
+      dinner: [],
+      snack: [],
+    };
+
+    for (const meal of meals) {
+      const typeRaw = meal.meal_type || "";
+      const type = String(typeRaw).toLowerCase();
+
+      if (type.includes("breakfast")) {
+        courseBuckets.breakfast.push(meal);
+      } else if (type.includes("lunch")) {
+        courseBuckets.lunch.push(meal);
+      } else if (type.includes("dinner")) {
+        courseBuckets.dinner.push(meal);
+      } else if (type.includes("snack")) {
+        courseBuckets.snack.push(meal);
+      } else {
+        // If unknown, treat as lunch for now
+        courseBuckets.lunch.push(meal);
+      }
+    }
+
+    const pick = (bucketName, fallbackBucketName) => {
+      const bucket = courseBuckets[bucketName];
+      if (bucket && bucket.length > 0) return bucket[0];
+
+      const fallback = courseBuckets[fallbackBucketName];
+      if (fallback && fallback.length > 0) return fallback[0];
+
+      // As a last resort, just return the first meal
+      return meals[0];
+    };
+
+    const breakfast = pick("breakfast", "lunch");
+    const lunch = pick("lunch", "dinner");
+    const dinner = pick("dinner", "lunch");
+    const snack = pick("snack", "breakfast");
+
+    const lineup = [breakfast, lunch, snack, dinner];
+
+    // De-duplicate in case the same meal got picked twice
+    const unique = [];
+    const seen = new Set();
+
+    for (const meal of lineup) {
+      if (!meal) continue;
+      if (seen.has(meal.id)) continue;
+      seen.add(meal.id);
+      unique.push(meal);
+    }
+
+    console.log("[Meals] simple daily lineup:", unique);
+    return unique;
+  } catch (err) {
+    console.error("[Meals] buildSimpleDailyLineup hard error:", err);
+    return [];
+  }
+}
+
+// Generate a daily meal plan AND persist it to meal_plans + meal_plan_items
+export async function generateMealPlanForCurrentUser() {
+  // 0) Get the current auth user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    console.error("[MealPlans] no signed-in user", userError);
+    return {
+      ok: false,
+      error: userError?.message || "Not signed in.",
+    };
+  }
+
+  // 1) Get candidate meals (already filtered by prefs)
+  const candidatesRes = await getCandidateMealsForCurrentUser();
+  if (!candidatesRes.ok) {
+    console.error("[MealPlans] failed to get candidate meals", candidatesRes.error);
+    return candidatesRes;
+  }
+
+  const { profile, meals } = candidatesRes.data;
+
+  if (!Array.isArray(meals) || meals.length === 0) {
+    console.warn("[MealPlans] No meals available to build a plan.");
+    return {
+      ok: false,
+      error: "No meals available to build a plan.",
+    };
+  }
+
+  // 2) Build a simple 3 meals + 1 snack lineup
+  let lineup = [];
+  try {
+    lineup = buildSimpleDailyLineup(meals, profile);
+  } catch (err) {
+    console.error("[MealPlans] buildSimpleDailyLineup failed (hard throw):", err);
+    return {
+      ok: false,
+      error: "Failed to build daily lineup.",
+    };
+  }
+
+  if (!Array.isArray(lineup) || lineup.length === 0) {
+    console.error("[MealPlans] buildSimpleDailyLineup returned empty lineup");
+    return {
+      ok: false,
+      error: "Failed to build daily lineup.",
+    };
+  }
+
+  // 3) Compute macros_used snapshot from profile (best-effort)
+  const macrosUsed = {
+    calories: profile.macros_kcal ?? null,
+    protein_g: profile.macros_protein_g ?? null,
+    carbs_g: profile.macros_carbs_g ?? null,
+    fats_g: profile.macros_fats_g ?? null,
+  };
+
+  // 4) Insert into meal_plans
+  const todayISO = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+  const { data: planRow, error: planError } = await supabase
+    .from("meal_plans")
+    .insert([
+      {
+        user_id: user.id,
+        generated_for: todayISO,
+        macros_used: macrosUsed,
+        profile_snapshot: {
+          goal: profile.goal,
+          macro_mode: profile.macro_mode,
+          diet_preferences: profile.diet_preferences,
+          diet_allergies: profile.diet_allergies,
+          diet_spice_level: profile.diet_spice_level,
+          diet_flavor_profiles: profile.diet_flavor_profiles,
+        },
+      },
+    ])
+    .select()
+    .single();
+
+  if (planError) {
+    console.error("[MealPlans] insert meal_plans error", planError);
+    return {
+      ok: false,
+      error: planError.message,
+    };
+  }
+
+  // 5) Insert into meal_plan_items (one row per meal in lineup)
+  const itemsPayload = lineup.map((meal, index) => ({
+    meal_plan_id: planRow.id,
+    meal_id: meal.id,
+    course: meal.meal_type || null,
+    sequence_index: index,
+  }));
+
+  const { data: itemsRows, error: itemsError } = await supabase
+    .from("meal_plan_items")
+    .insert(itemsPayload)
+    .select();
+
+  if (itemsError) {
+    console.error("[MealPlans] insert meal_plan_items error", itemsError);
+    return {
+      ok: false,
+      error: itemsError.message,
+    };
+  }
+
+  console.log("[MealPlans] generated + saved plan:", {
+    plan: planRow,
+    items: itemsRows,
+    lineup,
+  });
+
+  return {
+    ok: true,
+    data: {
+      plan: planRow,
+      items: itemsRows,
+      lineup,
+    },
+  };
+}
+
 // 🔹 Force-clear spice level in profile (used when user skips spice)
 export async function clearSpicePreference() {
   const {
@@ -656,6 +834,363 @@ export async function markOnboardingComplete() {
   return { ok: true, data };
 }
 
+// NEW Get the full profile for the current user (diet prefs, macros, etc.)
+export async function getCurrentUserProfile() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, error: userError?.message || "Not signed in." };
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) {
+    console.error("[Profiles] getCurrentUserProfile error", error);
+    return { ok: false, error: error.message };
+  }
+
+  return { ok: true, data };
+}
+
+// NEW STEP 1: Get meals that roughly match the user's preferences
+export async function getCandidateMealsForCurrentUser() {
+  // 1) Load profile (diet prefs, allergies later, etc.)
+  const profileRes = await getCurrentUserProfile();
+  if (!profileRes.ok) {
+    console.error("[Meals] getCandidateMealsForCurrentUser profile error:", profileRes.error);
+    return profileRes; // { ok: false, error: ... }
+  }
+
+  const profile = profileRes.data || {};
+
+  // 🔹 Normalize profile fields safely
+  const rawPrefs = profile.diet_preferences;
+  let dietPrefs = [];
+
+  // If it's already an array (e.g. Supabase jsonb[]), use it directly
+  if (Array.isArray(rawPrefs)) {
+    dietPrefs = rawPrefs;
+  } else if (typeof rawPrefs === "string" && rawPrefs.length > 0) {
+    // If it's a JSON-looking string, try to parse: '["vegan"]' -> ["vegan"]
+    try {
+      const parsed = JSON.parse(rawPrefs);
+      dietPrefs = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      // If parsing fails, just ignore and fall back to empty
+      dietPrefs = [];
+    }
+  } else {
+    dietPrefs = [];
+  }
+
+  const rawAllergies = profile.diet_allergies;
+  const allergies = Array.isArray(rawAllergies) ? rawAllergies : [];
+
+  const spiceLevel =
+    typeof profile.diet_spice_level === "number" ? profile.diet_spice_level : null;
+
+  // 2) Load meals from Supabase
+  const { data: meals, error } = await supabase
+    .from("meals")
+    .select("id, name, description, meal_type, diet_tags, ready_in_minutes");
+
+  if (error) {
+    console.error("[Meals] getCandidateMealsForCurrentUser error", error);
+    return { ok: false, error: error.message };
+  }
+
+  console.log("[Meals] raw meals from Supabase:", meals);
+
+  // If somehow no meals in DB, just return empty but ok
+  if (!Array.isArray(meals) || meals.length === 0) {
+    return {
+      ok: true,
+      data: {
+        profile,
+        meals: [],
+      },
+    };
+  }
+
+  const prefsSet = new Set(dietPrefs.map(String));
+
+  // 3) Basic filtering:
+  //    - If user has no diet prefs, let everything through
+  //    - If user DOES have prefs, only keep meals that share at least one tag
+  const filtered = meals.filter((meal) => {
+    const tags = Array.isArray(meal.diet_tags)
+      ? meal.diet_tags.map(String)
+      : [];
+
+    // A) Diet preferences
+    if (prefsSet.size > 0) {
+      const hasOverlap = tags.some((tag) => prefsSet.has(tag));
+      if (!hasOverlap) return false;
+    }
+
+    // B) Allergies / spice / etc. can be layered in later
+    //    For now, we skip that logic in v1.
+
+    return true;
+  });
+
+  // 🔥 Fallback: if filtering removed everything, just use all meals
+  const finalMeals = filtered.length > 0 ? filtered : meals;
+
+  console.log(
+    "[Meals] filtering summary:",
+    "dietPrefs =", dietPrefs,
+    "| raw meals =", meals.length,
+    "| filtered =", filtered.length,
+    "| finalMeals =", finalMeals.length
+  );
+
+  return {
+    ok: true,
+    data: {
+      profile,
+      meals: finalMeals,
+    },
+  };
+}
+
+// STEP 2: Build a simple "3 meals + 1 snack" lineup from candidate meals
+export async function buildSimpleDailyLineupForCurrentUser() {
+  // 1) Get candidate meals (already filtered by diet prefs)
+  const baseRes = await getCandidateMealsForCurrentUser();
+  if (!baseRes.ok) {
+    return baseRes; // { ok: false, error: ... }
+  }
+
+  const { profile, meals } = baseRes.data || {};
+
+  // If no meals at all, return empty lineup
+  if (!meals || meals.length === 0) {
+    console.warn("[Meals] No candidate meals found for this user.");
+    return {
+      ok: true,
+      data: {
+        profile,
+        meals: [],
+        lineup: [],
+      },
+    };
+  }
+
+  // 2) Bucket meals by meal_type (normalized to lowercase)
+  const buckets = {
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snack: [],
+  };
+
+  meals.forEach((meal) => {
+    const type = (meal.meal_type || "").toLowerCase();
+    if (buckets[type]) {
+      buckets[type].push(meal);
+    }
+  });
+
+  // 3) Helper to pick one meal from a bucket (if available, not duplicated)
+  const lineup = [];
+  const usedIds = new Set();
+
+  function pickFromBucket(type) {
+    const arr = buckets[type];
+    if (!arr || arr.length === 0) return;
+
+    // stable ordering (optional)
+    arr.sort((a, b) => a.name.localeCompare(b.name));
+
+    const next = arr[0];
+    if (!usedIds.has(next.id)) {
+      lineup.push(next);
+      usedIds.add(next.id);
+    }
+  }
+
+  // 4) Try to fill: breakfast → lunch → dinner → snack
+  ["breakfast", "lunch", "dinner", "snack"].forEach(pickFromBucket);
+
+  const TARGET_COUNT = 4; // 👉 3 meals + 1 snack
+
+  // 5) If we still have fewer than 4, fill with any remaining meals
+  if (lineup.length < TARGET_COUNT && meals.length > lineup.length) {
+    for (const meal of meals) {
+      if (lineup.length >= TARGET_COUNT) break;
+      if (!usedIds.has(meal.id)) {
+        lineup.push(meal);
+        usedIds.add(meal.id);
+      }
+    }
+  }
+
+  console.log(
+    "[Meals] simple daily lineup (TARGET 4):",
+    lineup.map((m) => ({
+      id: m.id,
+      name: m.name,
+      meal_type: m.meal_type,
+    }))
+  );
+
+  return {
+    ok: true,
+    data: {
+      profile,
+      meals,
+      lineup,
+    },
+  };
+}
+
+// NEW: Load the latest saved meal plan + its meals
+export async function getLatestSavedMealPlanForCurrentUser() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, error: userError?.message || "Not signed in." };
+  }
+
+  // 1) Get the most recent meal_plan for this user
+  const { data: plan, error: planError } = await supabase
+    .from("meal_plans")
+    .select("id, generated_for, macros_used, profile_snapshot")
+    .eq("user_id", user.id)
+    .order("generated_for", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (planError) {
+    console.error("[MealPlans] getLatestSavedMealPlanForCurrentUser plan error", planError);
+    return { ok: false, error: planError.message };
+  }
+
+  if (!plan) {
+    // No saved plans yet
+    return {
+      ok: true,
+      data: {
+        plan: null,
+        items: [],
+        meals: [],
+      },
+    };
+  }
+
+  // 2) Get the items for that plan
+  const { data: items, error: itemsError } = await supabase
+    .from("meal_plan_items")
+    // ⛔️ NOTE: we NO LONGER ask for 'slot' here
+    .select("id, meal_plan_id, meal_id, sequence_index")
+    .eq("meal_plan_id", plan.id)
+    .order("sequence_index", { ascending: true });
+
+  if (itemsError) {
+    console.error("[MealPlans] getLatestSavedMealPlanForCurrentUser items error", itemsError);
+    return { ok: false, error: itemsError.message };
+  }
+
+  if (!items || items.length === 0) {
+    return {
+      ok: true,
+      data: {
+        plan,
+        items: [],
+        meals: [],
+      },
+    };
+  }
+
+  // 3) Load the meal rows for those items
+  const mealIds = items.map((item) => item.meal_id);
+  const { data: meals, error: mealsError } = await supabase
+    .from("meals")
+    .select("id, name, description, meal_type, diet_tags, ready_in_minutes")
+    .in("id", mealIds);
+
+  if (mealsError) {
+    console.error("[MealPlans] getLatestSavedMealPlanForCurrentUser meals error", mealsError);
+    return { ok: false, error: mealsError.message };
+  }
+
+  const mealsById = new Map(meals.map((m) => [m.id, m]));
+
+  // Helper to derive a friendly label (slot) if we don't have one in DB
+  function deriveSlotLabel(item, meal) {
+    // First try the meal_type if it looks nice
+    if (meal?.meal_type) {
+      const type = meal.meal_type.toLowerCase();
+      if (type === "breakfast") return "Breakfast";
+      if (type === "lunch") return "Lunch";
+      if (type === "dinner") return "Dinner";
+      if (type === "snack") return "Snack";
+    }
+
+    // Otherwise, fall back on index position
+    switch (item.sequence_index) {
+      case 0:
+        return "Breakfast";
+      case 1:
+        return "Lunch";
+      case 2:
+        return "Snack";
+      case 3:
+        return "Dinner";
+      default:
+        return "Meal";
+    }
+  }
+
+  // 4) Build a lineup array that your UI can use directly
+  const lineup = items
+    .map((item) => {
+      const meal = mealsById.get(item.meal_id);
+      if (!meal) return null;
+
+      return {
+      // core meal fields
+      id: meal.id,
+      name: meal.name,
+      description: meal.description,
+      meal_type: meal.meal_type,
+      diet_tags: meal.diet_tags,
+      ready_in_minutes: meal.ready_in_minutes,
+
+      // nice UI string for HomeMealPlan
+      readyIn:
+        typeof meal.ready_in_minutes === "number"
+          ? `${meal.ready_in_minutes} min`
+          : "- min",
+
+      // UI helpers
+      slot: deriveSlotLabel(item, meal),
+      sequence_index: item.sequence_index,
+    };
+    })
+    .filter(Boolean);
+
+  return {
+    ok: true,
+    data: {
+      plan,
+      items,
+      meals: lineup,
+    },
+  };
+}
+
 export async function createUserProfile({
   firstName,
   lastName,
@@ -666,7 +1201,7 @@ export async function createUserProfile({
   activity,         // 'sedentary' | 'light' | 'moderate' | 'very'
   goal = "maintain",         // 'lose' | 'maintain' | 'gain'
   dietaryFlags = ["none"],   // array
-  mealsPerDay = 3,
+  mealsPerDay = 4,
 }) {
   const age = dobToAge(dobYear, dobMonth, dobDay);
 
