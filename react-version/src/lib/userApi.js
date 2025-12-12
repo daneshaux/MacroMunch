@@ -1117,7 +1117,7 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   const mealIds = items.map((item) => item.meal_id);
   const { data: meals, error: mealsError } = await supabase
     .from("meals")
-    .select("id, name, description, meal_type, diet_tags, ready_in_minutes")
+    .select("id, name, description, meal_type, diet_tags, ready_in_minutes, base_kcal, base_protein_g, base_carbs_g, base_fat_g")
     .in("id", mealIds);
 
   if (mealsError) {
@@ -1155,11 +1155,17 @@ export async function getLatestSavedMealPlanForCurrentUser() {
 
   // 4) Build a lineup array that your UI can use directly
   const lineup = items
-    .map((item) => {
-      const meal = mealsById.get(item.meal_id);
-      if (!meal) return null;
+  .map((item) => {
+    const meal = mealsById.get(item.meal_id);
+    if (!meal) return null;
 
-      return {
+    // Pull base macros from the DB meal row
+    const baseKcal    = meal.base_kcal ?? null;
+    const baseProtein = meal.base_protein_g ?? null;
+    const baseCarbs   = meal.base_carbs_g ?? null;
+    const baseFat     = meal.base_fat_g ?? null;
+
+    return {
       // core meal fields
       id: meal.id,
       name: meal.name,
@@ -1167,6 +1173,23 @@ export async function getLatestSavedMealPlanForCurrentUser() {
       meal_type: meal.meal_type,
       diet_tags: meal.diet_tags,
       ready_in_minutes: meal.ready_in_minutes,
+
+      // base macros straight from Supabase
+      base_kcal: baseKcal,
+      base_protein_g: baseProtein,
+      base_carbs_g: baseCarbs,
+      base_fat_g: baseFat,
+
+      // macros object shaped like your original MEAL_PLAN mock
+      macros:
+        baseKcal == null
+          ? null
+          : {
+              calories: Math.round(baseKcal),
+              protein: Math.round(baseProtein ?? 0),
+              carbs: Math.round(baseCarbs ?? 0),
+              fats: Math.round(baseFat ?? 0),
+            },
 
       // nice UI string for HomeMealPlan
       readyIn:
@@ -1178,8 +1201,8 @@ export async function getLatestSavedMealPlanForCurrentUser() {
       slot: deriveSlotLabel(item, meal),
       sequence_index: item.sequence_index,
     };
-    })
-    .filter(Boolean);
+  })
+  .filter(Boolean);
 
   return {
     ok: true,
