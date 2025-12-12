@@ -1,16 +1,28 @@
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pillPop {
+  from { transform: scale(0.9); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
 .screen {
-    width: 100%;
-    max-width: 430px;
-    min-height: 100vh;
-    margin: 0 auto;
-    padding: 24px 0px 120px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-6);
-  }
-  
-  /* Header */
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 0px 120px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  /* page entrance */
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Header */
 
 .header {
   display: flex;
@@ -33,6 +45,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  animation: pillPop 0.28s ease-out forwards;
 }
 
 .headerText {
@@ -50,7 +63,7 @@
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.65);
   word-break: break-all;
-  white-space: normal;     /* <-- This allows wrapping */
+  white-space: normal;     
   overflow-wrap: break-word;
   opacity: 0.9;
 }
@@ -74,6 +87,7 @@
     background: radial-gradient(circle at top left, #020617, #020617, #050816);
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6);
     box-sizing: border-box;
+    animation: fadeInUp 0.42s ease-out;
   }
   
   .cardHeader {
@@ -105,6 +119,7 @@
     border-radius: 999px;
     border: 1px solid rgba(74, 222, 128, 0.5);
     background: rgba(15, 23, 42, 0.9);
+    animation: pillPop 0.25s ease-out forwards;
   }
   
   /* Link rows (settings) */
@@ -130,7 +145,6 @@
     color: #f87171;
   } 
 
-  /* ── Static rows (Goal, Age, Height, Weight) ───────────── */
 
 .row {
   display: flex;
@@ -150,7 +164,6 @@
   text-align: right;
 }
 
-/* ── Clickable rows (Activity level, Meals per day) ───── */
 
 .rowButton {
   width: 100%;
@@ -176,7 +189,6 @@
   gap: 8px;
 }
 
-/* inherit label/value colors for clickable row */
 .rowButton .label {
   color: #e5e7eb;
   opacity: 0.8;
@@ -192,4 +204,22 @@
   flex-shrink: 0;
   font-size: 18px;
   color: #9ca3af;
+}
+
+/* ── Stagger helpers ─────────────────────────────────── */
+/* small stagger for cards in the sections list */
+.sections > .card:nth-child(1) { animation-delay: 0.02s; }
+.sections > .card:nth-child(2) { animation-delay: 0.06s; }
+.sections > .card:nth-child(3) { animation-delay: 0.10s; }
+.sections > .card:nth-child(4) { animation-delay: 0.14s; }
+
+/* stagger tags inside dietary card */
+.tagList .tag:nth-child(1) { animation-delay: 0s; }
+.tagList .tag:nth-child(2) { animation-delay: 0.04s; }
+.tagList .tag:nth-child(3) { animation-delay: 0.08s; }
+.tagList .tag:nth-child(4) { animation-delay: 0.12s; }
+
+/* keep responsive behaviour intact */
+@media (max-width: 420px) {
+  .card { padding: 12px; }
 }
