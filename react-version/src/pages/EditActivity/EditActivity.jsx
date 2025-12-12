@@ -27,14 +27,13 @@ function EditActivityPage() {
 
       if (res.ok && res.data) {
         const user = res.data;
-        // API examples use "activitylevel"; be defensive:
-        const apiActivity =
-          user.activitylevel ?? user.activityLevel ?? "lightly_active";
+
+        // ✅ Supabase column: activity_level
+        const apiActivity = user.activity_level ?? "lightly_active";
 
         setCurrentActivity(apiActivity);
         setActivity(apiActivity);
       } else {
-        // fallback, but log what happened
         console.warn("Could not load profile:", res.error);
         setCurrentActivity("lightly_active");
         setActivity("lightly_active");
@@ -50,7 +49,6 @@ function EditActivityPage() {
   }, []);
 
   async function handleSave() {
-    // If nothing changed, just go back
     if (activity === currentActivity) {
       navigate(-1);
       return;
@@ -88,7 +86,6 @@ function EditActivityPage() {
           <p className="caption">Loading your preferences…</p>
         ) : (
           <>
-            {/* Re-use your pretty radio cards */}
             <ActivityLevel value={activity} onChange={setActivity} />
 
             {error && <p className={`caption ${styles.error}`}>{error}</p>}

@@ -103,8 +103,8 @@ function OnboardingPreferences() {
   return (
     <main className={styles.screen}>
       <OnboardingHeader
-        currentStep={2}
-        totalSteps={6}
+        currentStep={3}
+        totalSteps={7}
         onBack={handleBack}
       />
 

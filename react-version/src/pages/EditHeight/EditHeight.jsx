@@ -1,10 +1,12 @@
 // src/pages/EditHeight/EditHeight.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import styles from "./EditHeight.module.css";
 import Select from "@/components/Select/Select";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
+import { getCurrentUserProfile, updateHeightCm } from "@/lib/userApi";
+import { ftInToCm, cmToFtIn } from "@/lib/conversions";
 
 const FEET_OPTIONS = Array.from({ length: 6 }, (_, i) => {
   const feet = i + 3; // 3–8 ft
@@ -20,17 +22,75 @@ function EditHeightPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const startFeet = String(location.state?.feet ?? 5);
-  const startInches = String(location.state?.inches ?? 5);
+  // Initial from navigation state (fallback)
+  const [initialFeet, setInitialFeet] = useState(
+    String(location.state?.feet ?? 5)
+  );
+  const [initialInches, setInitialInches] = useState(
+    String(location.state?.inches ?? 5)
+  );
 
-  const [feet, setFeet] = useState(startFeet);
-  const [inches, setInches] = useState(startInches);
+  const [feet, setFeet] = useState(initialFeet);
+  const [inches, setInches] = useState(initialInches);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const isDirty = feet !== startFeet || inches !== startInches;
+  const isDirty = feet !== initialFeet || inches !== initialInches;
 
-  function handleSave() {
-    // 🔮 future: backend update
-    navigate(-1);
+  // Load current height from Supabase if available
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfile() {
+      setLoading(true);
+      const res = await getCurrentUserProfile();
+      if (!isMounted) return;
+
+      if (res.ok && res.data && res.data.height_cm) {
+        const { feet: f, inches: i } = cmToFtIn(res.data.height_cm);
+        const fStr = String(f || 5);
+        const iStr = String(i || 5);
+
+        setInitialFeet(fStr);
+        setInitialInches(iStr);
+        setFeet(fStr);
+        setInches(iStr);
+      } else {
+        console.warn("Could not load height:", res.error);
+        // we already have sensible defaults from location.state
+      }
+
+      setLoading(false);
+    }
+
+    loadProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function handleSave() {
+    if (!isDirty) {
+      navigate(-1);
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+
+    const cm = ftInToCm(feet, inches);
+
+    const res = await updateHeightCm(cm);
+
+    setSaving(false);
+
+    if (!res.ok) {
+      setError(res.error || "Could not update height.");
+      return;
+    }
+
+    navigate("/profile");
   }
 
   function handleCancel() {
@@ -41,49 +101,61 @@ function EditHeightPage() {
     <main className={styles.screen}>
       <header className={styles.header}>
         <h1 className="h1">Height</h1>
-        <p className="caption">Update your height for accurate macro tracking.</p>
+        <p className="caption">
+          Update your height for accurate macro tracking.
+        </p>
       </header>
 
       <section className={styles.content}>
-        <div className={styles.card}>
-          <div className={styles.inputRow}>
-            <Select
-              id="feet"
-              label="Feet"
-              value={feet}
-              onChange={setFeet}
-              options={FEET_OPTIONS}
-            />
+        {loading ? (
+          <p className="caption">Loading your height…</p>
+        ) : (
+          <>
+            <div className={styles.card}>
+              <div className={styles.inputRow}>
+                <Select
+                  id="feet"
+                  label="Feet"
+                  value={feet}
+                  onChange={setFeet}
+                  options={FEET_OPTIONS}
+                />
 
-            <Select
-              id="inches"
-              label="Inches"
-              value={inches}
-              onChange={setInches}
-              options={INCH_OPTIONS}
-            />
-          </div>
+                <Select
+                  id="inches"
+                  label="Inches"
+                  value={inches}
+                  onChange={setInches}
+                  options={INCH_OPTIONS}
+                />
+              </div>
 
-          <p className="caption">
-            Used only to calculate your energy needs — not shown publicly.
-          </p>
-        </div>
+              <p className="caption">
+                Used only to calculate your energy needs — not shown publicly.
+              </p>
+            </div>
 
-        <div className={styles.actions}>
-          <PrimaryButton
-            type="button"
-            label={isDirty ? "Save changes" : "Saved"}
-            disabled={!isDirty}
-            onClick={handleSave}
-          />
-          <button
-            type="button"
-            className={`${styles.cancel} body-text`}
-            onClick={handleCancel}
-          >
-            Cancel
-          </button>
-        </div>
+            {error && (
+              <p className={`caption ${styles.error}`}>{error}</p>
+            )}
+
+            <div className={styles.actions}>
+              <PrimaryButton
+                type="button"
+                label={isDirty ? (saving ? "Saving…" : "Save changes") : "Saved"}
+                disabled={!isDirty || saving || loading}
+                onClick={handleSave}
+              />
+              <button
+                type="button"
+                className={`${styles.cancel} body-text`}
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
       </section>
     </main>
   );

@@ -37,7 +37,7 @@ const GOAL_OPTIONS = [
 
 function OnboardingGoal() {
   const navigate = useNavigate();
-  const { state, setGoal, setMacroMode, resetOnboarding } = useOnboarding();
+  const { state, setGoal, resetOnboarding } = useOnboarding();
 
   function handleBack() {
     // Back from step 1 → cancel onboarding and return home
@@ -46,25 +46,15 @@ function OnboardingGoal() {
   }
 
   function handleSelectGoal(value) {
-    setMacroMode("auto");
     setGoal(value);
-    // Auto-advance to dietary preferences with slight pause for feedback
-    setTimeout(() => {
-      navigate("/onboarding/diet");
-    }, 400);
-  }
-
-  function handleManualMacros() {
-    setMacroMode("manual");
-    // Navigate to manual macros flow (you can change this route later)
-    navigate("/onboarding/manual-macros");
+    navigate("/onboarding/plan-build");
   }
 
   return (
     <main className={styles.screen}>
       <OnboardingHeader
         currentStep={1}
-        totalSteps={6}
+        totalSteps={7}
         onBack={handleBack}
         // title={null} // you picked no title; we just omit it
       />
@@ -90,16 +80,6 @@ function OnboardingGoal() {
               onClick={() => handleSelectGoal(opt.value)}
             />
           ))}
-        </div>
-
-        <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.manualLink}
-            onClick={handleManualMacros}
-          >
-            Manually enter my macros
-          </button>
         </div>
       </section>
     </main>

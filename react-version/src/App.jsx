@@ -29,6 +29,7 @@ import EditPreferencesPage from "@/pages/EditPreferences/EditPreferences";
 // 🆕 Onboarding context + screen
 import { OnboardingProvider } from "@/context/OnboardingContext";
 import OnboardingGoal from "@/pages/OnboardingGoal/OnboardingGoal";
+import OnboardingPlanBuild from "@/pages/OnboardingPlanBuild/OnboardingPlanBuild";
 import OnboardingManualMacros from "@/pages/OnboardingManualMacros/OnboardingManualMacros";
 import OnboardingPreferences from "@/pages/OnboardingPreferences/OnboardingPreferences";
 import OnboardingAllergies from "@/pages/OnboardingAllergies/OnboardingAllergies";
@@ -38,7 +39,7 @@ import OnboardingFlavorProfiles from "@/pages/OnboardingFlavorProfiles/Onboardin
 import OnboardingLoading from "@/pages/OnboardingLoading/OnboardingLoading";
 import Recipe from "./pages/Recipe/Recipe";
 
-const DEV_BYPASS_AUTH = true;
+const DEV_BYPASS_AUTH = false;
 
 function App() {
   const location = useLocation();
@@ -184,6 +185,10 @@ function App() {
 
           {/* 🆕 Onboarding: Goal (Step 1) */}
           <Route path="/onboarding/goal" element={<OnboardingGoal />} />
+          <Route
+            path="/onboarding/plan-build"
+            element={<OnboardingPlanBuild />}
+          />
           <Route
             path="/onboarding/manual-macros"
             element={<OnboardingManualMacros />}
