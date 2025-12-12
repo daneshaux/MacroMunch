@@ -5,11 +5,6 @@ import { useNavigate } from "react-router-dom";
 import { getLatestSavedMealPlanForCurrentUser } from "@/lib/userApi";
 import styles from "./HomeMealPlan.module.css";
 
-const DAILY_MACROS = [
-  { key: "Protein", value: "135 g" },
-  { key: "Carbs", value: "210 g" },
-  { key: "Fats", value: "68 g" },
-];
 
 const MEAL_PLAN = [
   {
@@ -99,6 +94,23 @@ function HomeMealPlan({ firstName = "there" }) {
   const displayMeals =
     planMeals && planMeals.length > 0 ? planMeals : MEAL_PLAN;
 
+      // 🔢 Sum up macros from whatever we're displaying (live plan or fallback)
+      const dailyTotals = displayMeals.reduce(
+        (totals, meal) => {
+          if (!meal.macros) return totals;
+
+          return {
+            calories: totals.calories + (meal.macros.calories || 0),
+            protein: totals.protein + (meal.macros.protein || 0),
+            carbs: totals.carbs + (meal.macros.carbs || 0),
+            fats: totals.fats + (meal.macros.fats || 0),
+          };
+        },
+        { calories: 0, protein: 0, carbs: 0, fats: 0 }
+      );
+
+      const hasDailyMacros = dailyTotals.calories > 0;
+
   return (
     <main className={styles.screen}>
       <div className={styles.headerWrapper}>
@@ -122,16 +134,35 @@ function HomeMealPlan({ firstName = "there" }) {
       <section className={styles.macrosCard}>
         <div className={styles.macrosHeader}>
           <p className={styles.macrosLabel}>Today&apos;s macros</p>
-          <span className={styles.macrosGoal}>Target · 2050 kcal</span>
+          <span className={styles.macrosGoal}>
+            {hasDailyMacros
+              ? `Planned · ${Math.round(dailyTotals.calories)} kcal`
+              : "Planned · — kcal"}
+          </span>
         </div>
 
         <div className={styles.macrosGrid}>
-          {DAILY_MACROS.map((macro) => (
-            <div key={macro.key} className={styles.macroBlock}>
-              <span className={styles.macroLabel}>{macro.key}</span>
-              <span className={styles.macroValue}>{macro.value}</span>
-            </div>
-          ))}
+          <div className={styles.macroBlock}>
+            <span className={styles.macroLabel}>Protein</span>
+            <span className={styles.macroValue}>
+              {hasDailyMacros ? `${Math.round(dailyTotals.protein)} g` : "—"}
+            </span>
+          </div>
+
+          <div className={styles.macroBlock}>
+            <span className={styles.macroLabel}>Carbs</span>
+            <span className={styles.macroValue}>
+              {hasDailyMacros ? `${Math.round(dailyTotals.carbs)} g` : "—"}
+            </span>
+          </div>
+
+          <div className={styles.macroBlock}>
+            <span className={styles.macroValueSpacer} />
+            <span className={styles.macroLabel}>Fats</span>
+            <span className={styles.macroValue}>
+              {hasDailyMacros ? `${Math.round(dailyTotals.fats)} g` : "—"}
+            </span>
+          </div>
         </div>
       </section>
 
