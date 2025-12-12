@@ -1,99 +1,302 @@
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pillPop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .screen {
-    width: 100%;
-    max-width: 430px;
-    min-height: 100vh;
-    margin: 0 auto;
-    padding: 24px 0 120px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  /* content below header */
-  .content {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-  
-  /* Search bar */
-  .searchWrapper {
-    margin-top: 8px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    border-radius: 10px;
-    background: #0b1120;
-    border: 1px solid #111827;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
-  }
-  
-  .searchIcon {
-    font-size: 18px;
-    color: #9ca3af;
-    margin-left: 8px;
-  }
-  
-  .searchInput {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: #f9fafb;
-    padding: 10px 4px;
-    font-size: 0.95rem;
-  }
-  
-  .searchInput::placeholder {
-    color: #6b7280;
-  }
-  
-  .searchInput:focus {
-    outline: none;
-  }
-  
-  /* Meal type chips row */
-  .mealTypesRow {
-    padding: 0;
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-  
-  /* hide ugly scrollbar on mobile Safari / Chrome */
-  .mealTypesRow::-webkit-scrollbar {
-    display: none;
-  }
-  
-  /* Sections */
-  .section {
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .sectionHeader {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-  }
-  
-  .sectionHeader h2 {
-    color: #f9fafb;
-  }
-  
-  .sectionLink {
-    border: none;
-    background: transparent;
-    color: #bfdbfe;
-    cursor: pointer;
-  }
-  
-  /* Recipe grid */
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 24px 0 120px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* content below header */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Search bar */
+.searchWrapper {
+  margin-top: 8px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 10px;
+  background: #0b1120;
+  border: 1px solid #111827;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65);
+}
+
+.searchIcon {
+  font-size: 18px;
+  color: #9ca3af;
+  margin-left: 8px;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #f9fafb;
+  padding: 10px 4px;
+  font-size: 0.95rem;
+}
+
+.searchInput::placeholder {
+  color: #6b7280;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+/* Meal type chips row */
+.mealTypesRow {
+  padding: 0;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  animation: fadeInUp 0.45s ease-out;
+}
+
+.mealTypesRow::-webkit-scrollbar {
+  display: none;
+}
+
+/* Sections */
+.section {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.sectionHeader h2 {
+  color: #f9fafb;
+}
+
+.sectionLink {
+  border: none;
+  background: transparent;
+  color: #bfdbfe;
+  cursor: pointer;
+}
+
+/* Recipe grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mealCard {
+  border-radius: 24px;
+  overflow: hidden;
+  background: #0b0f1c;
+  border: 1px solid rgba(15, 23, 42, 0.7);
+  box-shadow: 0 10px 25px rgba(2, 6, 23, 0.5);
+  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+  /* card entrance animation */
+  animation: fadeInUp 0.45s ease-out;
+}
+
+.mealCard:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 16px 35px rgba(2, 6, 23, 0.7);
+}
+
+.mealMedia {
+  width: 100%;
+  height: 210px;
+  overflow: hidden;
+}
+
+.mealMedia img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mealBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mealTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mealLabel {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4ade80;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.readyIn {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.mealName {
+  margin: 0;
+  font-size: 18px;
+  color: #f9fafb;
+}
+
+.mealDescription {
+  margin: 0;
+  color: #cbd5f5;
+  font-size: 14px;
+}
+
+.mealMacros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 14px;
+  color: #cbd5f5;
+}
+
+.mealMacroItem strong {
+  color: #f9fafb;
+}
+
+.ingredients {
+  margin-top: 8px;
+}
+
+.ingredientSection {
+  display: flex;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding: 10px;
+  color: #4ade80;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.spices {
+  margin-top: 4px;
+}
+
+.spicesSection {
+  display: flex;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding: 10px;
+  color: #4ade80;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.macropillContainer {
+  display: flex;
+  flex-direction: row;
+  padding: 4px 16px 12px;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.macropill {
+  font-size: 12px;
+  text-transform: uppercase;
+  text-align: center;
+  justify-content: center;
+  white-space: nowrap;
+  letter-spacing: 0.08em;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  background: rgba(15, 23, 42, 0.9);
+  animation: pillPop 0.25s ease-out forwards;
+}
+
+/* small utility classes preserved from original design */
+.instruction {
+  text-align: left;
+  padding: 15px 20px 24px;
+  color: #e5e7eb;
+}
+
+.instructionTitle {
+  align-self: center;
+  text-align: center;
+  margin: 0;
+  font-size: 21px;
+  color: #f9fafb;
+}
+
+.instructionText {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+span {
+  color: #4ade80;
+  font-weight: bold;
+  font-size: large;
+}
+
+.grid > * {
+  animation: fadeInUp 0.48s ease-out;
+}
+
+.grid > *:nth-child(1) { animation-delay: 0.02s; }
+.grid > *:nth-child(2) { animation-delay: 0.06s; }
+.grid > *:nth-child(3) { animation-delay: 0.10s; }
+.grid > *:nth-child(4) { animation-delay: 0.14s; }
+
+.macropillContainer .macropill:nth-child(1) { animation-delay: 0s; }
+.macropillContainer .macropill:nth-child(2) { animation-delay: 0.04s; }
+.macropillContainer .macropill:nth-child(3) { animation-delay: 0.08s; }
+.macropillContainer .macropill:nth-child(4) { animation-delay: 0.12s; }
+
+@media (max-width: 420px) {
   .grid {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }  
+    gap: 10px;
+  }
+}
