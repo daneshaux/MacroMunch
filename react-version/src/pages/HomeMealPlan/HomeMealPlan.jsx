@@ -59,6 +59,7 @@ function HomeMealPlan({ firstName = "there" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [planMeals, setPlanMeals] = useState([]);
+  const [planMeta, setPlanMeta] = useState(null);
 
   // 🔹 Load latest saved plan on mount
   useEffect(() => {
@@ -76,8 +77,9 @@ function HomeMealPlan({ firstName = "there" }) {
           return;
         }
 
-        const { meals } = res.data;
+        const { meals, plan } = res.data;
         setPlanMeals(meals || []);
+        setPlanMeta(plan || null);
       } catch (err) {
         console.error("[HomeMealPlan] loadPlan error", err);
         setError(err.message || "Unknown error while loading plan.");
@@ -94,22 +96,34 @@ function HomeMealPlan({ firstName = "there" }) {
   const displayMeals =
     planMeals && planMeals.length > 0 ? planMeals : MEAL_PLAN;
 
-      // 🔢 Sum up macros from whatever we're displaying (live plan or fallback)
-      const dailyTotals = displayMeals.reduce(
-        (totals, meal) => {
-          if (!meal.macros) return totals;
+  // Prefer the plan's macros_used for the header; fallback to summing meal macros
+  const headerMacros = (() => {
+    const m = planMeta?.macros_used;
+    if (m && (m.calories || m.protein_g || m.carbs_g || m.fats_g)) {
+      return {
+        calories: m.calories || 0,
+        protein: m.protein_g || 0,
+        carbs: m.carbs_g || 0,
+        fats: m.fats_g || 0,
+      };
+    }
 
-          return {
-            calories: totals.calories + (meal.macros.calories || 0),
-            protein: totals.protein + (meal.macros.protein || 0),
-            carbs: totals.carbs + (meal.macros.carbs || 0),
-            fats: totals.fats + (meal.macros.fats || 0),
-          };
-        },
-        { calories: 0, protein: 0, carbs: 0, fats: 0 }
-      );
+    return displayMeals.reduce(
+      (totals, meal) => {
+        if (!meal.macros) return totals;
 
-      const hasDailyMacros = dailyTotals.calories > 0;
+        return {
+          calories: totals.calories + (meal.macros.calories || 0),
+          protein: totals.protein + (meal.macros.protein || 0),
+          carbs: totals.carbs + (meal.macros.carbs || 0),
+          fats: totals.fats + (meal.macros.fats || 0),
+        };
+      },
+      { calories: 0, protein: 0, carbs: 0, fats: 0 }
+    );
+  })();
+
+  const hasDailyMacros = headerMacros.calories > 0;
 
   return (
     <main className={styles.screen}>
@@ -136,7 +150,7 @@ function HomeMealPlan({ firstName = "there" }) {
           <p className={styles.macrosLabel}>Today&apos;s macros</p>
           <span className={styles.macrosGoal}>
             {hasDailyMacros
-              ? `Planned · ${Math.round(dailyTotals.calories)} kcal`
+              ? `Planned · ${Math.round(headerMacros.calories)} kcal`
               : "Planned · — kcal"}
           </span>
         </div>
@@ -145,14 +159,14 @@ function HomeMealPlan({ firstName = "there" }) {
           <div className={styles.macroBlock}>
             <span className={styles.macroLabel}>Protein</span>
             <span className={styles.macroValue}>
-              {hasDailyMacros ? `${Math.round(dailyTotals.protein)} g` : "—"}
+              {hasDailyMacros ? `${Math.round(headerMacros.protein)} g` : "—"}
             </span>
           </div>
 
           <div className={styles.macroBlock}>
             <span className={styles.macroLabel}>Carbs</span>
             <span className={styles.macroValue}>
-              {hasDailyMacros ? `${Math.round(dailyTotals.carbs)} g` : "—"}
+              {hasDailyMacros ? `${Math.round(headerMacros.carbs)} g` : "—"}
             </span>
           </div>
 
@@ -160,7 +174,7 @@ function HomeMealPlan({ firstName = "there" }) {
             <span className={styles.macroValueSpacer} />
             <span className={styles.macroLabel}>Fats</span>
             <span className={styles.macroValue}>
-              {hasDailyMacros ? `${Math.round(dailyTotals.fats)} g` : "—"}
+              {hasDailyMacros ? `${Math.round(headerMacros.fats)} g` : "—"}
             </span>
           </div>
         </div>
@@ -197,21 +211,26 @@ function HomeMealPlan({ firstName = "there" }) {
                 meal.mealDescription ||
                 "Balanced for energy and satiety.";
 
-              // For now, images are static/fallback — live meals reuse the first image
+              // Prefer live image if present, otherwise static fallback
               const image =
                 meal.image ||
+                meal.image_url ||
                 (MEAL_PLAN[0] && MEAL_PLAN[0].image) ||
                 "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=60";
 
-              const readyIn = meal.readyIn || "— min";
+              const readyIn =
+                meal.readyIn || (meal.ready_in_minutes ? `${meal.ready_in_minutes} min` : "— min");
               const hasMacros = !!meal.macros;
 
               return (
                 <article
                   key={meal.id || index}
                   className={styles.mealCard}
-                  onClick={() => navigate("/recipe")}
+                  onClick={() => navigate("/recipe", { state: { meal } })}
                 >
+                  <div className={styles.mealMedia}>
+                    <img src={image} alt={title} />
+                  </div>
 
                   <div className={styles.mealBody}>
                     <div className={styles.mealTopRow}>

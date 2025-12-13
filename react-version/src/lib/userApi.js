@@ -694,53 +694,156 @@ export async function generateMealPlanForCurrentUser() {
     };
   }
 
-  // 3) Compute macros_used snapshot from profile (best-effort)
+  // 3) Compute macros_used snapshot: prefer profile, otherwise sum lineup base macros
+  const lineupTotals = lineup.reduce(
+    (acc, meal) => {
+      const kcal = Number(meal.base_kcal);
+      const protein = Number(meal.base_protein_g);
+      const carbs = Number(meal.base_carbs_g);
+      const fat = Number(meal.base_fat_g);
+
+      acc.calories += Number.isFinite(kcal) ? kcal : 0;
+      acc.protein_g += Number.isFinite(protein) ? protein : 0;
+      acc.carbs_g += Number.isFinite(carbs) ? carbs : 0;
+      acc.fats_g += Number.isFinite(fat) ? fat : 0;
+      return acc;
+    },
+    { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 }
+  );
+
   const macrosUsed = {
-    calories: profile.macros_kcal ?? null,
-    protein_g: profile.macros_protein_g ?? null,
-    carbs_g: profile.macros_carbs_g ?? null,
-    fats_g: profile.macros_fats_g ?? null,
+    calories: profile.macros_kcal ?? (lineupTotals.calories || null),
+    protein_g: profile.macros_protein_g ?? (lineupTotals.protein_g || null),
+    carbs_g: profile.macros_carbs_g ?? (lineupTotals.carbs_g || null),
+    fats_g: profile.macros_fat_g ?? (lineupTotals.fats_g || null),
   };
 
-  // 4) Insert into meal_plans
-  const todayISO = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  // 4) Get-or-create meal_plans (1 per user per day)
+  const todayISO = new Date().toISOString().slice(0, 10);
 
-  const { data: planRow, error: planError } = await supabase
+  const planPayload = {
+    user_id: user.id,
+    generated_for: todayISO,
+    macros_used: macrosUsed,
+    profile_snapshot: {
+      goal: profile.goal,
+      macro_mode: profile.macros_mode ?? profile.macro_mode,
+      diet_preferences: profile.diet_preferences,
+      diet_allergies: profile.diet_allergies,
+      diet_spice_level: profile.diet_spice_level,
+      diet_flavor_profiles: profile.diet_flavor_profiles,
+    },
+  };
+
+  let planRow = null;
+  // 4a) Look for an existing plan to avoid insert conflicts
+  const { data: existingPlan, error: existingErr } = await supabase
     .from("meal_plans")
-    .insert([
-      {
-        user_id: user.id,
-        generated_for: todayISO,
-        macros_used: macrosUsed,
-        profile_snapshot: {
-          goal: profile.goal,
-          macro_mode: profile.macro_mode,
-          diet_preferences: profile.diet_preferences,
-          diet_allergies: profile.diet_allergies,
-          diet_spice_level: profile.diet_spice_level,
-          diet_flavor_profiles: profile.diet_flavor_profiles,
-        },
-      },
-    ])
-    .select()
-    .single();
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("generated_for", todayISO)
+    .maybeSingle();
 
-  if (planError) {
-    console.error("[MealPlans] insert meal_plans error", planError);
-    return {
-      ok: false,
-      error: planError.message,
-    };
+  if (existingErr) {
+    console.error("[MealPlans] lookup meal_plans error", existingErr);
+    return { ok: false, error: existingErr.message };
   }
 
-  // 5) Insert into meal_plan_items (one row per meal in lineup)
+  if (existingPlan?.id) {
+    const { data, error } = await supabase
+      .from("meal_plans")
+      .update({
+        macros_used: planPayload.macros_used,
+        profile_snapshot: planPayload.profile_snapshot,
+      })
+      .eq("id", existingPlan.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[MealPlans] update meal_plans error", error);
+      return { ok: false, error: error.message };
+    }
+
+    planRow = data;
+  } else {
+    const { data, error } = await supabase
+      .from("meal_plans")
+      .upsert(planPayload, { onConflict: "user_id,generated_for" })
+      .select()
+      .single();
+
+    if (error) {
+      // Treat any error here as a conflict race; re-select the row and continue
+      const { data: retry, error: retryErr } = await supabase
+        .from("meal_plans")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("generated_for", todayISO)
+        .maybeSingle();
+
+      if (retry) {
+        planRow = retry;
+        // Refresh macros/profile snapshot best-effort
+        const { error: refreshErr } = await supabase
+          .from("meal_plans")
+          .update({
+            macros_used: planPayload.macros_used,
+            profile_snapshot: planPayload.profile_snapshot,
+          })
+          .eq("id", retry.id);
+        if (refreshErr) {
+          console.warn("[MealPlans] refresh snapshot after conflict failed", refreshErr);
+        }
+      } else {
+        console.error("[MealPlans] insert/upsert meal_plans error", error);
+        return { ok: false, error: retryErr?.message || error.message };
+      }
+    } else {
+      planRow = data;
+    }
+  }
+
+  // If planRow is still missing (e.g., conflict path), re-select today’s row
+  if (!planRow) {
+    const { data: retry, error: retryErr } = await supabase
+      .from("meal_plans")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("generated_for", todayISO)
+      .maybeSingle();
+
+    if (retry) {
+      planRow = retry;
+    } else {
+      console.error("[MealPlans] unable to read plan after conflict", retryErr);
+      return { ok: false, error: retryErr?.message || "Could not load meal plan." };
+    }
+  }
+
+  if (!planRow?.id) {
+    return { ok: false, error: "Meal plan row missing after save." };
+  }
+
+  // 5) Replace meal_plan_items for this plan (delete then insert)
+  const { error: deleteError } = await supabase
+    .from("meal_plan_items")
+    .delete()
+    .eq("meal_plan_id", planRow.id);
+
+  if (deleteError) {
+    console.error("[MealPlans] delete meal_plan_items error", deleteError);
+    return { ok: false, error: deleteError.message };
+  }
+
   const itemsPayload = lineup.map((meal, index) => ({
     meal_plan_id: planRow.id,
     meal_id: meal.id,
-    course: meal.meal_type || null,
+    course: meal.meal_type || meal.slot || meal.course || null,
     sequence_index: index,
   }));
 
+  // 5b) Insert new items
   const { data: itemsRows, error: itemsError } = await supabase
     .from("meal_plan_items")
     .insert(itemsPayload)
@@ -748,17 +851,8 @@ export async function generateMealPlanForCurrentUser() {
 
   if (itemsError) {
     console.error("[MealPlans] insert meal_plan_items error", itemsError);
-    return {
-      ok: false,
-      error: itemsError.message,
-    };
+    return { ok: false, error: itemsError.message };
   }
-
-  console.log("[MealPlans] generated + saved plan:", {
-    plan: planRow,
-    items: itemsRows,
-    lineup,
-  });
 
   return {
     ok: true,
@@ -899,7 +993,9 @@ export async function getCandidateMealsForCurrentUser() {
   // 2) Load meals from Supabase
   const { data: meals, error } = await supabase
     .from("meals")
-    .select("id, name, description, meal_type, diet_tags, ready_in_minutes");
+    .select(
+      "id, name, description, meal_type, diet_tags, ready_in_minutes, image_url, base_kcal, base_protein_g, base_carbs_g, base_fat_g"
+    );
 
   if (error) {
     console.error("[Meals] getCandidateMealsForCurrentUser error", error);
@@ -941,16 +1037,22 @@ export async function getCandidateMealsForCurrentUser() {
     return true;
   });
 
-  // 🔥 Fallback: if filtering removed everything, just use all meals
-  const finalMeals = filtered.length > 0 ? filtered : meals;
+  // If nothing matched, signal empty so we don't serve fallback meals
+  const finalMeals = filtered;
 
   console.log(
     "[Meals] filtering summary:",
     "dietPrefs =", dietPrefs,
     "| raw meals =", meals.length,
-    "| filtered =", filtered.length,
-    "| finalMeals =", finalMeals.length
+    "| filtered =", filtered.length
   );
+
+  if (finalMeals.length === 0) {
+    return {
+      ok: false,
+      error: "No meals matched your preferences.",
+    };
+  }
 
   return {
     ok: true,
@@ -1117,7 +1219,7 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   const mealIds = items.map((item) => item.meal_id);
   const { data: meals, error: mealsError } = await supabase
     .from("meals")
-    .select("id, name, description, meal_type, diet_tags, ready_in_minutes, base_kcal, base_protein_g, base_carbs_g, base_fat_g")
+    .select("id, name, description, meal_type, diet_tags, ready_in_minutes, image_url, base_kcal, base_protein_g, base_carbs_g, base_fat_g")
     .in("id", mealIds);
 
   if (mealsError) {
@@ -1173,6 +1275,7 @@ export async function getLatestSavedMealPlanForCurrentUser() {
       meal_type: meal.meal_type,
       diet_tags: meal.diet_tags,
       ready_in_minutes: meal.ready_in_minutes,
+      image_url: meal.image_url || null,
 
       // base macros straight from Supabase
       base_kcal: baseKcal,
