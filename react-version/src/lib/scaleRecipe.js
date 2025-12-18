@@ -101,7 +101,7 @@ export async function getRecipeWithIngredients(recipeId) {
   }
 
   // 2) Fetch ingredients for this recipe, joining ingredient nutrition
-  const { data: ingredients, error: ingErr } = await supabase
+  const { data: recipeIngredients, error: ingErr } = await supabase
     .from("recipe_ingredients")
     .select(
       `
@@ -132,7 +132,7 @@ export async function getRecipeWithIngredients(recipeId) {
 
   const data = {
     ...recipe,
-    ingredients: ingredients || [],
+    recipe_ingredients: recipeIngredients || [],
   };
 
   console.log("[Recipe] fetched recipe shape", data);

@@ -1473,6 +1473,26 @@ export async function getLatestSavedMealPlanForCurrentUser() {
       console.log("[Meals] first meal base macros", meals?.[0]?.base_kcal, meals?.[0]?.base_protein_g);
       console.log("[Items] first item target/scaled", items?.[0]?.target_macros, items?.[0]?.scaled_macros);
 
+  // 3.5) Load recipe mapping for those meals (choose first recipe by sort_order)
+  const { data: mealRecipes, error: mrError } = await supabase
+    .from("meal_recipes")
+    .select("meal_id, recipe_id, sort_order")
+    .in("meal_id", mealIds)
+    .order("sort_order", { ascending: true });
+
+  if (mrError) {
+    console.error("[MealPlans] meal_recipes error", mrError);
+  }
+
+  const recipeIdByMealId = new Map();
+  for (const mr of mealRecipes || []) {
+    // first one wins because we sorted by sort_order asc
+    if (!recipeIdByMealId.has(mr.meal_id) && mr.recipe_id) {
+      recipeIdByMealId.set(mr.meal_id, mr.recipe_id);
+    }
+  }
+
+  console.log("[MealRecipes] mapped", recipeIdByMealId.size, "of", mealIds.length);
 
   const mealsById = new Map(meals.map((m) => [m.id, m]));
   const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
@@ -1508,6 +1528,8 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   .map((item) => {
     const meal = mealsById.get(item.meal_id);
     if (!meal) return null;
+
+    const recipe_id = recipeIdByMealId.get(meal.id) || null;
 
     // Pull base macros from meal row
     const baseKcal    = meal.base_kcal ?? null;
@@ -1557,6 +1579,7 @@ export async function getLatestSavedMealPlanForCurrentUser() {
 
       // core meal fields
       id: meal.id,
+      recipe_id,
       name: meal.name,
       description: meal.description,
       meal_type: meal.meal_type,

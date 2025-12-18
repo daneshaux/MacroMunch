@@ -60,11 +60,7 @@ function Recipe({ firstName = "there" }) {
   const displayReady =
     displayMeal.readyIn ||
     (displayMeal.ready_in_minutes ? `${displayMeal.ready_in_minutes} min` : "— min");
-  const displayDescription =
-    displayMeal.description ||
-    displayMeal.mealDescription ||
-    recipeMeta?.description ||
-    "Balanced for energy and satiety.";
+  
 
   const safeName = firstName?.trim() || "there";
 
@@ -75,19 +71,34 @@ function Recipe({ firstName = "there" }) {
   const [scaledData, setScaledData] = useState(null);
   const [recipeMeta, setRecipeMeta] = useState(null);
 
+  const displayDescription =
+    displayMeal.description ||
+    displayMeal.mealDescription ||
+    recipeMeta?.description ||
+    "Balanced for energy and satiety.";
+
+  
+
+  const safe = (x) => {
+    const n = Number(x);
+    return Number.isFinite(n) ? n : null;
+  };
+
   const headerMacros = scaledData?.totals
-    ? {
-        protein: scaledData.totals.protein_g,
-        carbs: scaledData.totals.carbs_g,
-        fats: scaledData.totals.fats_g,
-      }
-    : displayMeal.macros
-    ? {
-        protein: displayMeal.macros.protein,
-        carbs: displayMeal.macros.carbs,
-        fats: displayMeal.macros.fats,
-      }
-    : null;
+  ? {
+      protein: scaledData.totals.protein_g,
+      carbs: scaledData.totals.carbs_g,
+      fats: scaledData.totals.fats_g,
+    }
+  : displayMeal.macros
+  ? {
+      protein: displayMeal.macros.protein,
+      carbs: displayMeal.macros.carbs,
+      fats: displayMeal.macros.fats,
+    }
+  : null;
+
+  console.log("[Recipe] headerMacros", headerMacros);
 
   useEffect(() => {
     async function load() {
@@ -95,11 +106,28 @@ function Recipe({ firstName = "there" }) {
       setError(null);
 
       try {
-        const recipeId = meal?.recipe_id || meal?.id || null;
+        const recipeId = meal?.recipe_id || null;
+
+        console.log("[Recipe] meal keys", Object.keys(meal || {}));
+        console.log("[Recipe] recipeId resolved to", recipeId);
+
         let recipeResult = null;
 
         if (recipeId) {
           const recipeRes = await getRecipeWithIngredients(recipeId);
+
+          console.log("[Recipe] getRecipeWithIngredients ok?", recipeRes.ok);
+          console.log("[Recipe] recipeRes.error", recipeRes.error);
+          console.log("[Recipe] recipeRes.data keys", Object.keys(recipeRes.data || {}));
+          console.log(
+            "[Recipe] recipe_ingredients len",
+            recipeRes.data?.recipe_ingredients?.length
+          );
+          console.log(
+            "[Recipe] first RI",
+            recipeRes.data?.recipe_ingredients?.[0]
+          );
+
           if (recipeRes.ok) {
             recipeResult = recipeRes.data;
           } else {
@@ -137,6 +165,12 @@ function Recipe({ firstName = "there" }) {
                 targetKcal || baseTotals?.calories
               )
             : null;
+
+        console.log(
+          "[Recipe] scaled totals keys",
+          Object.keys(scaled?.totals || {}),
+          scaled?.totals
+        );
 
         if (recipeResult) setRecipeMeta(recipeResult);
         if (scaled) setScaledData(scaled);
@@ -230,7 +264,9 @@ function Recipe({ firstName = "there" }) {
                       ri.ingredient?.name ||
                       ri.ingredient_id ||
                       `Ingredient ${index + 1}`;
-                    const grams = Math.round(ri.scaled_grams || 0);
+                    const grams = Math.round(
+                      (ri.scaled_grams ?? ri.scaledGrams ?? ri.grams ?? 0)
+                    );
                     return (
                       <div
                         key={`${name}-${index}`}
