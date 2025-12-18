@@ -1,9 +1,15 @@
-// src/pages/HomeMealPlan/HomeMealPlan.jsx
+// src/pages/Recipe/Recipe.jsx
 import AppHeader from "@/components/AppHeader/AppHeader";
 import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./Recipe.module.css";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getCurrentUserProfile } from "@/lib/userApi";
+import {
+  computeRecipeTotals,
+  scaleRecipeByCalories,
+  getRecipeWithIngredients,
+} from "@/lib/scaleRecipe";
 
 const DAILY_MACROS = [
   { key: "Protein", value: "32 g" },
@@ -57,12 +63,103 @@ function Recipe({ firstName = "there" }) {
   const displayDescription =
     displayMeal.description ||
     displayMeal.mealDescription ||
+    recipeMeta?.description ||
     "Balanced for energy and satiety.";
 
   const safeName = firstName?.trim() || "there";
 
   const [ingredientsOpen, setIngredientsOpen] = useState(false);
   const [spicesOpen, setSpicesOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [scaledData, setScaledData] = useState(null);
+  const [recipeMeta, setRecipeMeta] = useState(null);
+
+  const headerMacros = scaledData?.totals
+    ? {
+        protein: scaledData.totals.protein_g,
+        carbs: scaledData.totals.carbs_g,
+        fats: scaledData.totals.fats_g,
+      }
+    : displayMeal.macros
+    ? {
+        protein: displayMeal.macros.protein,
+        carbs: displayMeal.macros.carbs,
+        fats: displayMeal.macros.fats,
+      }
+    : null;
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const recipeId = meal?.recipe_id || meal?.id || null;
+        let recipeResult = null;
+
+        if (recipeId) {
+          const recipeRes = await getRecipeWithIngredients(recipeId);
+          if (recipeRes.ok) {
+            recipeResult = recipeRes.data;
+          } else {
+            setError(recipeRes.error || "Could not load recipe.");
+          }
+        }
+
+        const profileRes = await getCurrentUserProfile();
+        const targetKcal =
+          (profileRes.ok ? profileRes.data?.macros_kcal : null) ||
+          meal?.macros?.calories ||
+          null;
+
+        const recipeForScaling =
+          recipeResult &&
+          Array.isArray(recipeResult.recipe_ingredients) &&
+          recipeResult.recipe_ingredients.length > 0
+            ? {
+                ...recipeResult,
+                ingredients: recipeResult.recipe_ingredients.map((ri) => ({
+                  ...ri,
+                  ingredient: ri.ingredient,
+                })),
+              }
+            : null;
+
+        const baseTotals = recipeForScaling
+          ? computeRecipeTotals(recipeForScaling)
+          : null;
+
+        const scaled =
+          recipeForScaling && (targetKcal || baseTotals?.calories)
+            ? scaleRecipeByCalories(
+                recipeForScaling,
+                targetKcal || baseTotals?.calories
+              )
+            : null;
+
+        if (recipeResult) setRecipeMeta(recipeResult);
+        if (scaled) setScaledData(scaled);
+        else setScaledData(null);
+      } catch (err) {
+        console.error("[Recipe] load error", err);
+        setError(err.message || "Could not load recipe.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, [meal]);
+
+  const instructionsList = (() => {
+    const raw = recipeMeta?.instructions || recipeMeta?.steps || "";
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === "string" && raw.trim().length > 0) {
+      return raw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    }
+    return null;
+  })();
 
   return (
     <main className={styles.screen}>
@@ -83,11 +180,11 @@ function Recipe({ firstName = "there" }) {
 
       <section className={styles.macrosCard}>
         <div className={styles.macrosGrid}>
-          {(displayMacros
+          {(headerMacros
             ? [
-                { key: "Protein", value: `${Math.round(displayMacros.protein || 0)} g` },
-                { key: "Carbs", value: `${Math.round(displayMacros.carbs || 0)} g` },
-                { key: "Fats", value: `${Math.round(displayMacros.fats || 0)} g` },
+                { key: "Protein", value: `${Math.round(headerMacros.protein || 0)} g` },
+                { key: "Carbs", value: `${Math.round(headerMacros.carbs || 0)} g` },
+                { key: "Fats", value: `${Math.round(headerMacros.fats || 0)} g` },
               ]
             : DAILY_MACROS
           ).map((macro) => (
@@ -128,15 +225,33 @@ function Recipe({ firstName = "there" }) {
               </div>
               {ingredientsOpen && (
                 <div className={styles.macropillContainer}>
-                  {INGREDIENTS.map((item, index) => (
-                    <div
-                      key={item}
-                      className={styles.macropill}
-                      style={{ animationDelay: `${index * 0.05}s` }}
-                    >
-                      {item}
-                    </div>
-                  ))}
+                  {(scaledData?.scaledIngredients || []).map((ri, index) => {
+                    const name =
+                      ri.ingredient?.name ||
+                      ri.ingredient_id ||
+                      `Ingredient ${index + 1}`;
+                    const grams = Math.round(ri.scaled_grams || 0);
+                    return (
+                      <div
+                        key={`${name}-${index}`}
+                        className={styles.macropill}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        {grams ? `${grams} g · ${name}` : name}
+                      </div>
+                    );
+                  })}
+
+                  {(!scaledData || scaledData.scaledIngredients?.length === 0) &&
+                    INGREDIENTS.map((item, index) => (
+                      <div
+                        key={item}
+                        className={styles.macropill}
+                        style={{ animationDelay: `${index * 0.05}s` }}
+                      >
+                        {item}
+                      </div>
+                    ))}
                 </div>
               )}
             </div>
@@ -173,28 +288,38 @@ function Recipe({ firstName = "there" }) {
             <div className={styles.instruction}>
               <h3 className={styles.instructionTitle}>Instructions</h3>
 
-              <p className={styles.instructionText}>
-                <br />
-                <span>1. Cook the oats</span>
-                <br />
-                <br />
-                In a pot, cook ½ cup oats with 1 cup water or milk, a pinch of
-                salt, cinnamon, and optional turmeric/ginger until thick.
-                <br />
-                <br />
-                <span>2. Stir in the protein</span>
-                <br />
-                <br />
-                Remove from heat and mix in 1 scoop protein powder + 1 tbsp
-                chia or flax. Add a splash of milk if too thick.
-                <br />
-                <br />
-                <span>3. Add toppings</span>
-                <br />
-                <br />
-                Top with banana, berries, a drizzle of honey or maple syrup,
-                and a spoon of nut butter or granola.
-              </p>
+              {instructionsList ? (
+                <ol className={styles.instructionList}>
+                  {instructionsList.map((step, idx) => (
+                    <li key={idx} className={styles.instructionText}>
+                      {step}
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className={styles.instructionText}>
+                  <br />
+                  <span>1. Cook the oats</span>
+                  <br />
+                  <br />
+                  In a pot, cook ½ cup oats with 1 cup water or milk, a pinch of
+                  salt, cinnamon, and optional turmeric/ginger until thick.
+                  <br />
+                  <br />
+                  <span>2. Stir in the protein</span>
+                  <br />
+                  <br />
+                  Remove from heat and mix in 1 scoop protein powder + 1 tbsp
+                  chia or flax. Add a splash of milk if too thick.
+                  <br />
+                  <br />
+                  <span>3. Add toppings</span>
+                  <br />
+                  <br />
+                  Top with banana, berries, a drizzle of honey or maple syrup,
+                  and a spoon of nut butter or granola.
+                </p>
+              )}
             </div>
           </article>
         </div>

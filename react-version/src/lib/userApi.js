@@ -575,6 +575,25 @@ function shuffleArray(arr) {
 
 // 🔹 Helper: pick 3 meals + 1 snack from the candidate list
 function buildSimpleDailyLineup(meals, profile) {
+  // ✅ 1) Shuffle once so “pick first match” isn’t always the same meal
+  const shuffled = [...(meals || [])].sort(() => Math.random() - 0.5);
+
+  // ✅ 2) Use *shuffled* for all course filters (not the original meals array)
+  const breakfastMeals = shuffled.filter((m) => (m.meal_type || "").toLowerCase() === "breakfast");
+  const lunchMeals     = shuffled.filter((m) => (m.meal_type || "").toLowerCase() === "lunch");
+  const dinnerMeals    = shuffled.filter((m) => (m.meal_type || "").toLowerCase() === "dinner");
+  const snackMeals     = shuffled.filter((m) => (m.meal_type || "").toLowerCase() === "snack");
+
+  console.log("[Lineup] shuffled order", shuffled.map(m => `${m.meal_type}:${m.name}`));
+
+  // ✅ Debug: confirm you actually have options per course
+  console.log("[Lineup] candidates by course", {
+    breakfast: breakfastMeals.length,
+    lunch: lunchMeals.length,
+    dinner: dinnerMeals.length,
+    snack: snackMeals.length,
+  });
+
   try {
     if (!Array.isArray(meals) || meals.length === 0) return [];
 
@@ -586,7 +605,7 @@ function buildSimpleDailyLineup(meals, profile) {
       snack: [],
     };
 
-    for (const meal of meals) {
+    for (const meal of shuffled) {
       const typeRaw = meal.meal_type || "";
       const type = String(typeRaw).toLowerCase();
 
@@ -604,23 +623,30 @@ function buildSimpleDailyLineup(meals, profile) {
       }
     }
 
-    const pick = (bucketName, fallbackBucketName) => {
-      const bucket = courseBuckets[bucketName];
-      if (bucket && bucket.length > 0) return bucket[0];
-
-      const fallback = courseBuckets[fallbackBucketName];
-      if (fallback && fallback.length > 0) return fallback[0];
-
-      // As a last resort, just return the first meal
-      return meals[0];
+    const pickRandom = (bucket, fallbackBucket, all) => {
+      const b = bucket?.length ? bucket : fallbackBucket?.length ? fallbackBucket : all;
+      return b[Math.floor(Math.random() * b.length)];
     };
 
-    const breakfast = pick("breakfast", "lunch");
-    const lunch = pick("lunch", "dinner");
-    const dinner = pick("dinner", "lunch");
-    const snack = pick("snack", "breakfast");
+    const breakfast = pickRandom(courseBuckets.breakfast, courseBuckets.lunch, shuffled);
+    const lunch     = pickRandom(courseBuckets.lunch, courseBuckets.dinner, shuffled);
+    const dinner    = pickRandom(courseBuckets.dinner, courseBuckets.lunch, shuffled);
+    const snack     = pickRandom(courseBuckets.snack, courseBuckets.breakfast, shuffled);
 
-    const lineup = [breakfast, lunch, snack, dinner];
+    const mpd = Number(profile?.meals_per_day) || 4;
+
+    let lineup = [];
+
+    if (mpd === 3) {
+      lineup = [breakfast, lunch, dinner]; // ✅ no snack
+    } else if (mpd === 5) {
+      // simple v1: breakfast, lunch, snack, dinner, snack2 (fallback reuse snack bucket)
+      const snack2 = pick("snack", "breakfast");
+      lineup = [breakfast, lunch, snack, dinner, snack2];
+    } else {
+      // default 4
+      lineup = [breakfast, lunch, snack, dinner];
+    }
 
     // De-duplicate in case the same meal got picked twice
     const unique = [];
@@ -712,10 +738,10 @@ export async function generateMealPlanForCurrentUser() {
   );
 
   const macrosUsed = {
-    calories: profile.macros_kcal ?? (lineupTotals.calories || null),
-    protein_g: profile.macros_protein_g ?? (lineupTotals.protein_g || null),
-    carbs_g: profile.macros_carbs_g ?? (lineupTotals.carbs_g || null),
-    fats_g: profile.macros_fat_g ?? (lineupTotals.fats_g || null),
+    calories: Number(profile.macros_kcal) || Math.round(lineupTotals.calories || 0),
+    protein_g: Number(profile.macros_protein_g) || Math.round(lineupTotals.protein_g || 0),
+    carbs_g: Number(profile.macros_carbs_g) || Math.round(lineupTotals.carbs_g || 0),
+    fats_g: Number(profile.macros_fat_g) || Math.round(lineupTotals.fats_g || 0),
   };
 
   // 4) Get-or-create meal_plans (1 per user per day)
@@ -728,6 +754,7 @@ export async function generateMealPlanForCurrentUser() {
     profile_snapshot: {
       goal: profile.goal,
       macro_mode: profile.macros_mode ?? profile.macro_mode,
+      meals_per_day: profile.meals_per_day,
       diet_preferences: profile.diet_preferences,
       diet_allergies: profile.diet_allergies,
       diet_spice_level: profile.diet_spice_level,
@@ -854,15 +881,220 @@ export async function generateMealPlanForCurrentUser() {
     return { ok: false, error: itemsError.message };
   }
 
-  return {
-    ok: true,
-    data: {
-      plan: planRow,
-      items: itemsRows,
-      lineup,
-    },
-  };
-}
+  // Persist per-item target macros
+  const updates = (itemsRows || []).map((itemRow) => {
+    // Find the matching meal so we can use its meal_type/slot for splits
+    const meal = lineup.find((m) => m.id === itemRow.meal_id) || {};
+
+    // Use the DB row’s course if present; otherwise fall back to the meal object
+    const course = itemRow.course || meal.meal_type || meal.slot || meal.course || null;
+
+    const target = buildTargetMacrosForItem(profile, {
+      course,
+      sequence_index: itemRow.sequence_index,
+    });
+
+    return {
+      id: itemRow.id,
+      target_macros: target,
+    };
+  });
+
+  // Persist per-item target macros (UPDATE-only to avoid UPSERT insert-RLS)
+  for (const u of updates) {
+    const { error } = await supabase
+      .from("meal_plan_items")
+      .update({
+        target_macros: u.target_macros,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", u.id);
+
+    if (error) {
+      console.error("[MealPlans] update target_macros error", error);
+      return { ok: false, error: error.message };
+    }
+  }
+
+  const scaledByItemId = new Map();
+
+  // Scale each meal to hit target macros and persist scaled_macros
+  for (const itemRow of itemsRows || []) {
+    const target = updates.find((u) => u.id === itemRow.id)?.target_macros;
+    if (!target) continue;
+
+    const mealRes = await getMealWithIngredients(itemRow.meal_id);
+    if (!mealRes.ok) {
+      console.error("[Scaling] getMealWithIngredients failed", mealRes.error);
+      return { ok: false, error: mealRes.error };
+    }
+
+    const components = mealRes.data || [];
+
+    console.log("[Scaling] component keys", Object.keys(components?.[0] || {}));
+
+    const lines = [];
+    for (const row of components) {
+      // If the join didn't bring back an ingredient object, this row can't contribute macros
+      if (!row.ingredient) continue;
+
+      const pm = Number(row.portion_multiplier) || 1;
+
+      const base = Number(row.default_grams);
+      if (!Number.isFinite(base) || base <= 0) continue;
+
+      const scaledBase = base * pm;
+
+      lines.push({
+        recipe_id: row.recipe_id,
+        ingredient_id: row.ingredient_id,
+        name: row.ingredient?.name,
+        category: (row.ingredient?.category || "").toLowerCase(),
+
+        min_grams: row.min_grams == null ? null : Number(row.min_grams) * pm,
+        max_grams: row.max_grams == null ? null : Number(row.max_grams) * pm,
+
+        ingredient: row.ingredient,
+        grams: scaledBase,
+      });
+    }
+
+    const clamp = (g, minG, maxG) => {
+      let out = Number(g) || 0;
+      const min = minG == null ? null : Number(minG);
+      const max = maxG == null ? null : Number(maxG);
+
+      if (Number.isFinite(min)) out = Math.max(out, min);
+      if (Number.isFinite(max) && max > 0) out = Math.min(out, max);
+      return out;
+    };
+
+    const totalsFrom = (arr) =>
+      arr.reduce(
+        (acc, l) => {
+          const g = Number(l.grams) || 0;
+          const ing = l.ingredient || {};
+          acc.calories += g * (Number(ing.kcal_per_gram) || 0);
+          acc.protein  += g * (Number(ing.protein_g_per_gram) || 0);
+          acc.carbs    += g * (Number(ing.carbs_g_per_gram) || 0);
+          acc.fats     += g * (Number(ing.fat_g_per_gram) || 0);
+          return acc;
+        },
+        { calories: 0, protein: 0, carbs: 0, fats: 0 }
+      );
+
+    const leverContribution = (arr, categories) =>
+      totalsFrom(arr.filter((l) => categories.includes(l.category)));
+
+    const PROTEIN_CATS = ["protein"];
+    const CARB_CATS = ["carb"];
+    const FAT_CATS = ["fat"];
+
+
+
+    console.log("[Scaling] lines count", lines.length);
+
+    if (lines.length === 0) {
+      console.warn("[Scaling] No ingredient lines after flatten", {
+        meal_id: itemRow.meal_id,
+        components: components.length,
+        firstComponentKeys: Object.keys(components?.[0] || {}),
+      });
+      continue;
+    }
+
+    console.log("[Scaling] first line", lines[0]);
+    console.log("[Scaling] first ingredient macros",
+      lines[0]?.ingredient?.kcal_per_gram,
+      lines[0]?.ingredient?.protein_g_per_gram,
+      lines[0]?.ingredient?.carbs_g_per_gram,
+      lines[0]?.ingredient?.fat_g_per_gram
+    );
+
+    console.log("[Scaling] base totals from defaults", totalsFrom(lines));
+
+    console.log("[Scaling] lever contribution",
+      {
+        protein: leverContribution(lines, PROTEIN_CATS),
+        carbs: leverContribution(lines, CARB_CATS),
+        fats: leverContribution(lines, FAT_CATS),
+      }
+    );
+
+
+
+    let working = lines.map((l) => ({
+      ...l,
+      grams: clamp(l.grams, l.min_grams, l.max_grams),
+    }));
+
+    for (let pass = 0; pass < 2; pass += 1) {
+      const curP = leverContribution(working, PROTEIN_CATS).protein;
+      const mp = curP > 0 ? target.protein / curP : 1;
+      working = working.map((l) => {
+        if (!PROTEIN_CATS.includes(l.category)) return l;
+        return { ...l, grams: clamp(l.grams * mp, l.min_grams, l.max_grams) };
+      });
+
+      const curC = leverContribution(working, CARB_CATS).carbs;
+      const mc = curC > 0 ? target.carbs / curC : 1;
+      working = working.map((l) => {
+        if (!CARB_CATS.includes(l.category)) return l;
+        return { ...l, grams: clamp(l.grams * mc, l.min_grams, l.max_grams) };
+      });
+
+      const curF = leverContribution(working, FAT_CATS).fats;
+      const mf = curF > 0 ? target.fats / curF : 1;
+      working = working.map((l) => {
+        if (!FAT_CATS.includes(l.category)) return l;
+        return { ...l, grams: clamp(l.grams * mf, l.min_grams, l.max_grams) };
+      });
+    }
+
+    const scaledTotals = totalsFrom(working);
+
+    const scaledPayload = {
+      calories: Math.round(scaledTotals.calories),
+      protein: Math.round(scaledTotals.protein),
+      carbs: Math.round(scaledTotals.carbs),
+      fats: Math.round(scaledTotals.fats),
+    };
+
+    scaledByItemId.set(itemRow.id, scaledPayload);
+
+    const { error } = await supabase
+      .from("meal_plan_items")
+      .update({
+        scaled_macros: scaledPayload,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", itemRow.id);
+
+    if (error) {
+      console.error("[Scaling] update scaled_macros error", error);
+      return { ok: false, error: error.message };
+    }
+
+    console.log("[Scaling] wrote scaled_macros ✅", {
+      item_id: itemRow.id,
+      meal_id: itemRow.meal_id,
+      scaled_macros: scaledPayload,
+    });
+  }
+
+    return {
+      ok: true,
+      data: {
+        plan: planRow,
+        items: itemsRows.map((r) => ({
+          ...r,
+          target_macros: updates.find((u) => u.id === r.id)?.target_macros ?? null,
+          scaled_macros: scaledByItemId.get(r.id) ?? null,
+        })),
+        lineup,
+      },
+    };
+  }
 
 // 🔹 Force-clear spice level in profile (used when user skips spice)
 export async function clearSpicePreference() {
@@ -1126,7 +1358,7 @@ export async function buildSimpleDailyLineupForCurrentUser() {
 
   // 5) If we still have fewer than 4, fill with any remaining meals
   if (lineup.length < TARGET_COUNT && meals.length > lineup.length) {
-    for (const meal of meals) {
+    for (const meal of shuffled) {
       if (lineup.length >= TARGET_COUNT) break;
       if (!usedIds.has(meal.id)) {
         lineup.push(meal);
@@ -1174,6 +1406,8 @@ export async function getLatestSavedMealPlanForCurrentUser() {
     .limit(1)
     .maybeSingle();
 
+    console.log("[Plan] user/date", user.id, plan?.generated_for);
+
   if (planError) {
     console.error("[MealPlans] getLatestSavedMealPlanForCurrentUser plan error", planError);
     return { ok: false, error: planError.message };
@@ -1194,15 +1428,24 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   // 2) Get the items for that plan
   const { data: items, error: itemsError } = await supabase
     .from("meal_plan_items")
-    // ⛔️ NOTE: we NO LONGER ask for 'slot' here
-    .select("id, meal_plan_id, meal_id, sequence_index")
+    .select("id, meal_plan_id, meal_id, sequence_index, course, scaled_macros, target_macros, servings, position")
     .eq("meal_plan_id", plan.id)
     .order("sequence_index", { ascending: true });
+
+    console.log(
+      "[Items] first item target/scaled",
+      items?.[0]?.target_macros,
+      items?.[0]?.scaled_macros
+    );
 
   if (itemsError) {
     console.error("[MealPlans] getLatestSavedMealPlanForCurrentUser items error", itemsError);
     return { ok: false, error: itemsError.message };
   }
+
+  console.log("[MealPlans] first item target_macros", items?.[0]?.target_macros);
+
+  console.log("[MealPlans] first item shape", items?.[0]);
 
   if (!items || items.length === 0) {
     return {
@@ -1227,7 +1470,12 @@ export async function getLatestSavedMealPlanForCurrentUser() {
     return { ok: false, error: mealsError.message };
   }
 
+      console.log("[Meals] first meal base macros", meals?.[0]?.base_kcal, meals?.[0]?.base_protein_g);
+      console.log("[Items] first item target/scaled", items?.[0]?.target_macros, items?.[0]?.scaled_macros);
+
+
   const mealsById = new Map(meals.map((m) => [m.id, m]));
+  const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
 
   // Helper to derive a friendly label (slot) if we don't have one in DB
   function deriveSlotLabel(item, meal) {
@@ -1261,13 +1509,52 @@ export async function getLatestSavedMealPlanForCurrentUser() {
     const meal = mealsById.get(item.meal_id);
     if (!meal) return null;
 
-    // Pull base macros from the DB meal row
+    // Pull base macros from meal row
     const baseKcal    = meal.base_kcal ?? null;
     const baseProtein = meal.base_protein_g ?? null;
     const baseCarbs   = meal.base_carbs_g ?? null;
     const baseFat     = meal.base_fat_g ?? null;
 
+    // Prefer scaled → target → base
+    const scaled = item.scaled_macros || null;
+    const target = item.target_macros || null;
+
+    const macrosFromBase =
+      baseKcal == null
+        ? null
+        : {
+            calories: Math.round(num(baseKcal)),
+            protein: Math.round(num(baseProtein)),
+            carbs: Math.round(num(baseCarbs)),
+            fats: Math.round(num(baseFat)),
+          };
+
+    const macrosFromTarget =
+      target && typeof target === "object"
+        ? {
+            calories: Math.round(num(target.calories)),
+            protein: Math.round(num(target.protein)),
+            carbs: Math.round(num(target.carbs)),
+            fats: Math.round(num(target.fats)),
+          }
+        : null;
+
+    const macrosFromScaled =
+      scaled && typeof scaled === "object"
+        ? {
+            calories: Math.round(num(scaled.calories)),
+            protein: Math.round(num(scaled.protein)),
+            carbs: Math.round(num(scaled.carbs)),
+            fats: Math.round(num(scaled.fats)),
+          }
+        : null;
+
+    const macrosToShow = macrosFromScaled || macrosFromTarget || macrosFromBase;
+
     return {
+      // ✅ include plan item id for later updates/detail screens
+      meal_plan_item_id: item.id,
+
       // core meal fields
       id: meal.id,
       name: meal.name,
@@ -1277,31 +1564,23 @@ export async function getLatestSavedMealPlanForCurrentUser() {
       ready_in_minutes: meal.ready_in_minutes,
       image_url: meal.image_url || null,
 
-      // base macros straight from Supabase
+      // keep base macros fields (nice for debugging / recipe screen)
       base_kcal: baseKcal,
       base_protein_g: baseProtein,
       base_carbs_g: baseCarbs,
       base_fat_g: baseFat,
 
-      // macros object shaped like your original MEAL_PLAN mock
-      macros:
-        baseKcal == null
-          ? null
-          : {
-              calories: Math.round(baseKcal),
-              protein: Math.round(baseProtein ?? 0),
-              carbs: Math.round(baseCarbs ?? 0),
-              fats: Math.round(baseFat ?? 0),
-            },
+      // ✅ what the UI actually renders
+      macros: macrosToShow,
 
-      // nice UI string for HomeMealPlan
+      // keep your "readyIn" string
       readyIn:
         typeof meal.ready_in_minutes === "number"
           ? `${meal.ready_in_minutes} min`
           : "- min",
 
       // UI helpers
-      slot: deriveSlotLabel(item, meal),
+      slot: item.course || deriveSlotLabel(item, meal),
       sequence_index: item.sequence_index,
     };
   })
@@ -1314,6 +1593,124 @@ export async function getLatestSavedMealPlanForCurrentUser() {
       items,
       meals: lineup,
     },
+  };
+}
+
+// NEW Load a meal with its ingredients + details for scaling
+export async function getMealWithIngredients(mealId) {
+  // 1) Load the meal's recipe composition (meal_recipes)
+  const { data: mealRecipes, error: mrErr } = await supabase
+    .from("meal_recipes")
+    .select("meal_id, recipe_id, sort_order, is_protein_component, portion_multiplier")
+    .eq("meal_id", mealId)
+    .order("sort_order", { ascending: true });
+
+  if (mrErr) {
+    console.error("[Meal] getMealWithIngredients meal_recipes error", mrErr);
+    return { ok: false, error: mrErr.message };
+  }
+
+  if (!mealRecipes || mealRecipes.length === 0) {
+    return { ok: true, data: [] };
+  }
+
+  const recipeIds = mealRecipes.map((r) => r.recipe_id);
+
+  // 2) Load all recipe_ingredients for those recipes + ingredient nutrition
+  const { data: recipeIngredients, error: riErr } = await supabase
+    .from("recipe_ingredients")
+    .select(`
+      id,
+      recipe_id,
+      ingredient_id,
+      default_grams,
+      min_grams,
+      max_grams,
+      ingredient:ingredients (
+        id,
+        name,
+        category,
+        kcal_per_gram,
+        protein_g_per_gram,
+        carbs_g_per_gram,
+        fat_g_per_gram,
+        grams_per_unit,
+        unit_label
+      )
+    `)
+    .in("recipe_id", recipeIds);
+
+  if (riErr) {
+    console.error("[Meal] getMealWithIngredients recipe_ingredients error", riErr);
+    return { ok: false, error: riErr.message };
+  }
+
+  // 3) Stitch meal_recipes metadata onto each ingredient row
+  const metaByRecipeId = new Map(mealRecipes.map((mr) => [mr.recipe_id, mr]));
+
+  const rows = (recipeIngredients || []).map((ri) => {
+    const meta = metaByRecipeId.get(ri.recipe_id) || {};
+    return {
+      meal_id: mealId,
+      recipe_id: ri.recipe_id,
+      sort_order: meta.sort_order ?? 0,
+      is_protein_component: meta.is_protein_component ?? false,
+      portion_multiplier: meta.portion_multiplier ?? 1,
+      ...ri,
+    };
+  });
+
+  // 4) Sort by meal recipe order (so scaling feels stable/predictable)
+  rows.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  return { ok: true, data: rows };
+}
+
+// NEW Helper to compute target macros per meal item based on profile + course
+function getCourseSplit(mealsPerDay, course, sequenceIndex) {
+  const mpd = Number(mealsPerDay) || 4;
+
+  // Normalize course text
+  const c = (course || "").toLowerCase();
+
+  // MVP splits
+  if (mpd === 3) {
+    const splits = { breakfast: 0.30, lunch: 0.35, dinner: 0.35 };
+    return splits[c] ?? 0;
+  }
+
+  if (mpd === 5) {
+    // Two snacks: we’ll treat seq 2 as snack1, seq 4 as snack2
+    // If you later store course = "snack" for both, sequenceIndex distinguishes them.
+    const isSnack = c === "snack";
+    if (isSnack && sequenceIndex === 4) return 0.15; // snack2
+    const splits = { breakfast: 0.20, lunch: 0.25, snack: 0.15, dinner: 0.25 };
+    return splits[c] ?? 0;
+  }
+
+  // Default: 4 meals/day
+  const splits = { breakfast: 0.25, lunch: 0.30, snack: 0.15, dinner: 0.30 };
+  return splits[c] ?? 0;
+}
+
+// NEW Build target macros for a meal plan item based on profile + course
+function buildTargetMacrosForItem(profile, item) {
+  const calories = Number(profile.macros_kcal) || 0;
+  const protein = Number(profile.macros_protein_g) || 0;
+  const carbs   = Number(profile.macros_carbs_g) || 0;
+  const fats    = Number(profile.macros_fat_g) || 0;
+
+  console.log("[Target] mpd/course/index", profile.meals_per_day, item.course, item.sequence_index);
+
+  const split = getCourseSplit(profile.meals_per_day, item.course, item.sequence_index);
+
+  return {
+    calories: Math.round(calories * split),
+    protein:  Math.round(protein * split),
+    carbs:    Math.round(carbs * split),
+    fats:     Math.round(fats * split),
+    split,
+    course: item.course,
   };
 }
 

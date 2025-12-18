@@ -5,3 +5,16 @@ MacroMunch.sln
 # react env files (never commit)
 react-version/.env
 react-version/.env.*
+
+# macOS
+.DS_Store
+
+# .NET build artifacts
+obj/
+bin/
+
+# Rider / VS
+.vs/
+
+# .NET solution files
+*.sln

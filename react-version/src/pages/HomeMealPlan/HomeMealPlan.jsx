@@ -80,6 +80,7 @@ function HomeMealPlan({ firstName = "there" }) {
         const { meals, plan } = res.data;
         setPlanMeals(meals || []);
         setPlanMeta(plan || null);
+
       } catch (err) {
         console.error("[HomeMealPlan] loadPlan error", err);
         setError(err.message || "Unknown error while loading plan.");
@@ -241,7 +242,7 @@ function HomeMealPlan({ firstName = "there" }) {
                     <h3 className={styles.mealName}>{title}</h3>
                     <p className={styles.mealDescription}>{description}</p>
 
-                    {/* Macros only exist on the static fallback for now */}
+                
                     {hasMacros && (
                       <div className={styles.mealMacros}>
                         {Object.entries(meal.macros).map(([macro, amount]) => (
