@@ -4,12 +4,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./Recipe.module.css";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import { useEffect, useState } from "react";
-import { getCurrentUserProfile } from "@/lib/userApi";
-import {
-  computeRecipeTotals,
-  scaleRecipeByCalories,
-  getRecipeWithIngredients,
-} from "@/lib/scaleRecipe";
+import { getMealWithIngredients } from "@/lib/userApi";
+
 
 const DAILY_MACROS = [
   { key: "Protein", value: "32 g" },
@@ -69,20 +65,12 @@ function Recipe({ firstName = "there" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [scaledData, setScaledData] = useState(null);
-  const [recipeMeta, setRecipeMeta] = useState(null);
 
   const displayDescription =
     displayMeal.description ||
     displayMeal.mealDescription ||
-    recipeMeta?.description ||
     "Balanced for energy and satiety.";
 
-  
-
-  const safe = (x) => {
-    const n = Number(x);
-    return Number.isFinite(n) ? n : null;
-  };
 
   const headerMacros = scaledData?.totals
   ? {
@@ -101,99 +89,66 @@ function Recipe({ firstName = "there" }) {
   console.log("[Recipe] headerMacros", headerMacros);
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      setError(null);
+  async function load() {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const recipeId = meal?.recipe_id || null;
+    try {
+      const mealId = meal?.id || null;
 
-        console.log("[Recipe] meal keys", Object.keys(meal || {}));
-        console.log("[Recipe] recipeId resolved to", recipeId);
+      console.log("[Recipe] meal keys", Object.keys(meal || {}));
+      console.log("[Recipe] mealId resolved to", mealId);
 
-        let recipeResult = null;
-
-        if (recipeId) {
-          const recipeRes = await getRecipeWithIngredients(recipeId);
-
-          console.log("[Recipe] getRecipeWithIngredients ok?", recipeRes.ok);
-          console.log("[Recipe] recipeRes.error", recipeRes.error);
-          console.log("[Recipe] recipeRes.data keys", Object.keys(recipeRes.data || {}));
-          console.log(
-            "[Recipe] recipe_ingredients len",
-            recipeRes.data?.recipe_ingredients?.length
-          );
-          console.log(
-            "[Recipe] first RI",
-            recipeRes.data?.recipe_ingredients?.[0]
-          );
-
-          if (recipeRes.ok) {
-            recipeResult = recipeRes.data;
-          } else {
-            setError(recipeRes.error || "Could not load recipe.");
-          }
-        }
-
-        const profileRes = await getCurrentUserProfile();
-        const targetKcal =
-          (profileRes.ok ? profileRes.data?.macros_kcal : null) ||
-          meal?.macros?.calories ||
-          null;
-
-        const recipeForScaling =
-          recipeResult &&
-          Array.isArray(recipeResult.recipe_ingredients) &&
-          recipeResult.recipe_ingredients.length > 0
-            ? {
-                ...recipeResult,
-                ingredients: recipeResult.recipe_ingredients.map((ri) => ({
-                  ...ri,
-                  ingredient: ri.ingredient,
-                })),
-              }
-            : null;
-
-        const baseTotals = recipeForScaling
-          ? computeRecipeTotals(recipeForScaling)
-          : null;
-
-        const scaled =
-          recipeForScaling && (targetKcal || baseTotals?.calories)
-            ? scaleRecipeByCalories(
-                recipeForScaling,
-                targetKcal || baseTotals?.calories
-              )
-            : null;
-
-        console.log(
-          "[Recipe] scaled totals keys",
-          Object.keys(scaled?.totals || {}),
-          scaled?.totals
-        );
-
-        if (recipeResult) setRecipeMeta(recipeResult);
-        if (scaled) setScaledData(scaled);
-        else setScaledData(null);
-      } catch (err) {
-        console.error("[Recipe] load error", err);
-        setError(err.message || "Could not load recipe.");
-      } finally {
-        setLoading(false);
+      if (!mealId) {
+        setScaledData(null);
+        return;
       }
-    }
 
-    load();
-  }, [meal]);
+      const mealRes = await getMealWithIngredients(mealId);
+
+      console.log("[Recipe] getMealWithIngredients ok?", mealRes.ok);
+      console.log("[Recipe] mealRes.error", mealRes.error);
+      console.log("[Recipe] meal ingredient rows len", mealRes.data?.length);
+      console.log("[Recipe] first row", mealRes.data?.[0]);
+
+      if (!mealRes.ok) {
+        setError(mealRes.error || "Could not load meal ingredients.");
+        setScaledData(null);
+        return;
+      }
+
+      // Use the rows directly for the UI (grams come from row.grams)
+      setScaledData({
+        scaledIngredients: mealRes.data || [],
+        totals: null, // header should fall back to displayMeal.macros
+      });
+    } catch (err) {
+      console.error("[Recipe] load error", err);
+      setError(err.message || "Could not load meal.");
+      setScaledData(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  load();
+}, [meal]);
 
   const instructionsList = (() => {
-    const raw = recipeMeta?.instructions || recipeMeta?.steps || "";
-    if (Array.isArray(raw)) return raw;
-    if (typeof raw === "string" && raw.trim().length > 0) {
-      return raw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-    }
-    return null;
-  })();
+  const raw =
+    displayMeal?.instructions ||
+    displayMeal?.meal_instructions ||
+    ""; // fallback if none
+
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string" && raw.trim().length > 0) {
+    return raw
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return null;
+})();
 
   return (
     <main className={styles.screen}>
@@ -264,9 +219,7 @@ function Recipe({ firstName = "there" }) {
                       ri.ingredient?.name ||
                       ri.ingredient_id ||
                       `Ingredient ${index + 1}`;
-                    const grams = Math.round(
-                      (ri.scaled_grams ?? ri.scaledGrams ?? ri.grams ?? 0)
-                    );
+                    const grams = Math.round(ri.grams ?? ri.default_grams ?? 0);
                     return (
                       <div
                         key={`${name}-${index}`}
