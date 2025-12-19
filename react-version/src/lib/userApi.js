@@ -1462,7 +1462,7 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   const mealIds = items.map((item) => item.meal_id);
   const { data: meals, error: mealsError } = await supabase
     .from("meals")
-    .select("id, name, description, meal_type, diet_tags, ready_in_minutes, image_url, base_kcal, base_protein_g, base_carbs_g, base_fat_g")
+    .select("id, name, description, instructions, author_name, meal_type, diet_tags, ready_in_minutes, image_url, base_kcal, base_protein_g, base_carbs_g, base_fat_g")
     .in("id", mealIds);
 
   if (mealsError) {
@@ -1582,6 +1582,8 @@ export async function getLatestSavedMealPlanForCurrentUser() {
       recipe_id,
       name: meal.name,
       description: meal.description,
+      instructions: meal.instructions || null,
+      author_name: meal.author_name || null,
       meal_type: meal.meal_type,
       diet_tags: meal.diet_tags,
       ready_in_minutes: meal.ready_in_minutes,

@@ -134,13 +134,8 @@ function Recipe({ firstName = "there" }) {
   load();
 }, [meal]);
 
-  const instructionsList = (() => {
-  const raw =
-    displayMeal?.instructions ||
-    displayMeal?.meal_instructions ||
-    ""; // fallback if none
-
-  if (Array.isArray(raw)) return raw;
+const instructionsList = (() => {
+  const raw = displayMeal.instructions || "";
   if (typeof raw === "string" && raw.trim().length > 0) {
     return raw
       .split(/\r?\n/)
@@ -149,6 +144,19 @@ function Recipe({ firstName = "there" }) {
   }
   return null;
 })();
+
+console.log("[Recipe] instructions preview", displayMeal.instructions);
+
+const rows = scaledData?.scaledIngredients || [];
+
+const isSpice = (row) =>
+  String(row?.ingredient?.category || "")
+    .trim()
+    .toLowerCase() === "spice";
+
+const mainIngredients = rows.filter((r) => !isSpice(r));
+const spices = rows.filter((r) => isSpice(r));
+
 
   return (
     <main className={styles.screen}>
@@ -163,7 +171,7 @@ function Recipe({ firstName = "there" }) {
       <section className={styles.hero}>
         <h1 className={styles.title}>{displayTitle}</h1>
         <p className={styles.subtitle}>
-          By <span className={styles.chef}>Gordon Ramsey</span>
+            By <span className={styles.chef}>{displayMeal.author_name || "MacroMunch"}</span>
         </p>
       </section>
 
@@ -214,7 +222,7 @@ function Recipe({ firstName = "there" }) {
               </div>
               {ingredientsOpen && (
                 <div className={styles.macropillContainer}>
-                  {(scaledData?.scaledIngredients || []).map((ri, index) => {
+                  {mainIngredients.map((ri, index) => {
                     const name =
                       ri.ingredient?.name ||
                       ri.ingredient_id ||
@@ -258,17 +266,31 @@ function Recipe({ firstName = "there" }) {
                   )}
                 </h3>
               </div>
+
               {spicesOpen && (
                 <div className={styles.macropillContainer}>
-                  {SPICES.map((item, index) => (
-                    <div
-                      key={item}
-                      className={styles.macropill}
-                      style={{ animationDelay: `${index * 0.05}s` }}
-                    >
-                      {item}
-                    </div>
-                  ))}
+                  {spices.length > 0 ? (
+                    spices.map((ri, index) => {
+                      const name =
+                        ri.ingredient?.name ||
+                        ri.ingredient_id ||
+                        `Spice ${index + 1}`;
+
+                      const grams = Math.round(ri.grams ?? ri.default_grams ?? 0);
+
+                      return (
+                        <div
+                          key={`${ri.id || ri.ingredient_id || name}-${index}`}
+                          className={styles.macropill}
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                        >
+                          {grams ? `${grams} g · ${name}` : name}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className={styles.instructionText}>Spices coming soon 💚</p>
+                  )}
                 </div>
               )}
             </div>
@@ -287,26 +309,7 @@ function Recipe({ firstName = "there" }) {
                 </ol>
               ) : (
                 <p className={styles.instructionText}>
-                  <br />
-                  <span>1. Cook the oats</span>
-                  <br />
-                  <br />
-                  In a pot, cook ½ cup oats with 1 cup water or milk, a pinch of
-                  salt, cinnamon, and optional turmeric/ginger until thick.
-                  <br />
-                  <br />
-                  <span>2. Stir in the protein</span>
-                  <br />
-                  <br />
-                  Remove from heat and mix in 1 scoop protein powder + 1 tbsp
-                  chia or flax. Add a splash of milk if too thick.
-                  <br />
-                  <br />
-                  <span>3. Add toppings</span>
-                  <br />
-                  <br />
-                  Top with banana, berries, a drizzle of honey or maple syrup,
-                  and a spoon of nut butter or granola.
+                  Instructions coming soon 💚
                 </p>
               )}
             </div>
