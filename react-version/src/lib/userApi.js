@@ -1400,9 +1400,9 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   // 1) Get the most recent meal_plan for this user
   const { data: plan, error: planError } = await supabase
     .from("meal_plans")
-    .select("id, generated_for, macros_used, profile_snapshot")
+    .select("id, generated_for, macros_used, profile_snapshot, created_at")
     .eq("user_id", user.id)
-    .order("generated_for", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -1736,6 +1736,96 @@ function buildTargetMacrosForItem(profile, item) {
     fats:     Math.round(fats * split),
     split,
     course: item.course,
+  };
+}
+
+// Loads a single meal_plan_item + its meal row (and returns a "meal-shaped" object your UI can use)
+export async function getMealPlanItemDetails(mealPlanItemId) {
+  const { data, error } = await supabase
+    .from("meal_plan_items")
+    .select(`
+      id,
+      meal_id,
+      sequence_index,
+      course,
+      scaled_macros,
+      target_macros,
+      meals:meals (
+        id,
+        name,
+        description,
+        meal_type,
+        diet_tags,
+        ready_in_minutes,
+        image_url,
+        base_kcal,
+        base_protein_g,
+        base_carbs_g,
+        base_fat_g,
+        instructions,
+        author_name
+      )
+    `)
+    .eq("id", mealPlanItemId)
+    .maybeSingle();
+
+  if (error) return { ok: false, error: error.message };
+  if (!data) return { ok: false, error: "Meal plan item not found." };
+
+  const meal = data.meals;
+
+  // Pick macros to show (scaled -> target -> base)
+  const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+
+  const macrosFromBase =
+    meal?.base_kcal == null
+      ? null
+      : {
+          calories: Math.round(num(meal.base_kcal)),
+          protein: Math.round(num(meal.base_protein_g)),
+          carbs: Math.round(num(meal.base_carbs_g)),
+          fats: Math.round(num(meal.base_fat_g)),
+        };
+
+  const macrosFromTarget =
+    data.target_macros && typeof data.target_macros === "object"
+      ? {
+          calories: Math.round(num(data.target_macros.calories)),
+          protein: Math.round(num(data.target_macros.protein)),
+          carbs: Math.round(num(data.target_macros.carbs)),
+          fats: Math.round(num(data.target_macros.fats)),
+        }
+      : null;
+
+  const macrosFromScaled =
+    data.scaled_macros && typeof data.scaled_macros === "object"
+      ? {
+          calories: Math.round(num(data.scaled_macros.calories)),
+          protein: Math.round(num(data.scaled_macros.protein)),
+          carbs: Math.round(num(data.scaled_macros.carbs)),
+          fats: Math.round(num(data.scaled_macros.fats)),
+        }
+      : null;
+
+  const macrosToShow = macrosFromScaled || macrosFromTarget || macrosFromBase;
+
+  return {
+    ok: true,
+    data: {
+      meal_plan_item_id: data.id,
+      id: meal?.id,
+      name: meal?.name,
+      description: meal?.description,
+      meal_type: meal?.meal_type,
+      diet_tags: meal?.diet_tags,
+      ready_in_minutes: meal?.ready_in_minutes,
+      image_url: meal?.image_url,
+      instructions: meal?.instructions,
+      author_name: meal?.author_name,
+      slot: data.course,
+      sequence_index: data.sequence_index,
+      macros: macrosToShow,
+    },
   };
 }
 

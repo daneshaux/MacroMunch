@@ -4,6 +4,7 @@ import AppHeader from "@/components/AppHeader/AppHeader";
 import { useNavigate } from "react-router-dom";
 import { getLatestSavedMealPlanForCurrentUser } from "@/lib/userApi";
 import styles from "./HomeMealPlan.module.css";
+import HomeEmptyState from "@/pages/HomeEmptyState/HomeEmptyState";
 
 
 const MEAL_PLAN = [
@@ -93,9 +94,17 @@ function HomeMealPlan({ firstName = "there" }) {
     loadPlan();
   }, []);
 
-  // If we have a real saved plan, use it; otherwise fallback to static MEAL_PLAN
-  const displayMeals =
-    planMeals && planMeals.length > 0 ? planMeals : MEAL_PLAN;
+    // ✅ Do we actually have a saved plan?
+  const hasRealPlan = Array.isArray(planMeals) && planMeals.length > 0;
+
+  // ✅ Always keep displayMeals as an ARRAY
+  // If you want NO fallback sample day, use [] instead of MEAL_PLAN.
+  const displayMeals = hasRealPlan ? planMeals : [];
+
+  // ✅ Gate: if done loading and no plan, show empty state
+  if (!loading && !hasRealPlan) {
+    return <HomeEmptyState firstName={safeName} />;
+  }
 
   // Prefer the plan's macros_used for the header; fallback to summing meal macros
   const headerMacros = (() => {
@@ -109,21 +118,23 @@ function HomeMealPlan({ firstName = "there" }) {
       };
     }
 
+    // ✅ reduce only works if displayMeals is an array (now it always is)
     return displayMeals.reduce(
       (totals, meal) => {
-        if (!meal.macros) return totals;
+        const macros = meal?.macros;
+        if (!macros) return totals;
 
         return {
-          calories: totals.calories + (meal.macros.calories || 0),
-          protein: totals.protein + (meal.macros.protein || 0),
-          carbs: totals.carbs + (meal.macros.carbs || 0),
-          fats: totals.fats + (meal.macros.fats || 0),
+          calories: totals.calories + (macros.calories || 0),
+          protein: totals.protein + (macros.protein || 0),
+          carbs: totals.carbs + (macros.carbs || 0),
+          fats: totals.fats + (macros.fats || 0),
         };
       },
       { calories: 0, protein: 0, carbs: 0, fats: 0 }
     );
   })();
-
+  
   const hasDailyMacros = headerMacros.calories > 0;
 
   return (
@@ -227,7 +238,10 @@ function HomeMealPlan({ firstName = "there" }) {
                 <article
                   key={meal.id || index}
                   className={styles.mealCard}
-                  onClick={() => navigate("/recipe", { state: { meal } })}
+                  onClick={() => {
+                    if (meal.meal_plan_item_id) navigate(`/recipe/${meal.meal_plan_item_id}`);
+                    else navigate("/recipe"); // fallback for static MEAL_PLAN
+                  }}
                 >
                   <div className={styles.mealMedia}>
                     <img src={image} alt={title} />

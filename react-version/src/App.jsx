@@ -13,6 +13,7 @@ import "./index.css";
 import WelcomePage from "@/pages/WelcomePage/WelcomePage";
 import CreateAccount from "@/pages/CreateAccount/CreateAccount";
 import Home from "@/pages/Home/Home";
+import HomeMealPlan from "@/pages/HomeMealPlan/HomeMealPlan";
 import Recipes from "@/pages/Recipes/Recipes";
 import Profile from "@/pages/Profile/Profile";
 import EditMealsPage from "@/pages/EditMeals/EditMeals";
@@ -180,7 +181,7 @@ function App() {
           {/* Home empty state */}
           <Route
             path="/home"
-            element={<Home firstName={userFirstName || "there"} />}
+            element={<HomeMealPlan firstName={userFirstName || "there"} />}
           />
 
           {/* 🆕 Onboarding: Goal (Step 1) */}
@@ -218,6 +219,9 @@ function App() {
             element={<OnboardingLoading />}
           />
           {/* <Route path="/onboarding/manual-macros" element={<ManualMacros />} /> */}
+
+          {/* Recipe page with mealPlanItemId param */}
+          <Route path="/recipe/:mealPlanItemId" element={<Recipe />} />
 
           {/* Recipes page */}
           <Route path="/recipes" element={<Recipes />} />

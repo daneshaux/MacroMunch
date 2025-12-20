@@ -1,11 +1,10 @@
 // src/pages/Recipe/Recipe.jsx
 import AppHeader from "@/components/AppHeader/AppHeader";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styles from "./Recipe.module.css";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import { useEffect, useState } from "react";
-import { getMealWithIngredients } from "@/lib/userApi";
-
+import { getMealWithIngredients, getMealPlanItemDetails } from "@/lib/userApi";
 
 const DAILY_MACROS = [
   { key: "Protein", value: "32 g" },
@@ -30,7 +29,10 @@ const SPICES = [
 function Recipe({ firstName = "there" }) {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const meal = state?.meal || null;
+  const { mealPlanItemId } = useParams();
+
+  // ✅ persisted meal state (starts from navigation state if present)
+  const [meal, setMeal] = useState(state?.meal || null);
 
   // Fallback (legacy static) if no meal was provided
   const fallbackMeal = {
@@ -46,17 +48,14 @@ function Recipe({ firstName = "there" }) {
   };
 
   const displayMeal = meal || fallbackMeal;
+
   const displayMacros = displayMeal.macros || null;
-  const displayImage =
-    displayMeal.image ||
-    displayMeal.image_url ||
-    fallbackMeal.image;
+  const displayImage = displayMeal.image || displayMeal.image_url || fallbackMeal.image;
   const displayTitle = displayMeal.name || displayMeal.title || "Meal";
   const displayLabel = displayMeal.slot || displayMeal.label || "Meal";
   const displayReady =
     displayMeal.readyIn ||
     (displayMeal.ready_in_minutes ? `${displayMeal.ready_in_minutes} min` : "— min");
-  
 
   const safeName = firstName?.trim() || "there";
 
@@ -67,95 +66,109 @@ function Recipe({ firstName = "there" }) {
   const [scaledData, setScaledData] = useState(null);
 
   const displayDescription =
-    displayMeal.description ||
-    displayMeal.mealDescription ||
-    "Balanced for energy and satiety.";
-
+    displayMeal.description || displayMeal.mealDescription || "Balanced for energy and satiety.";
 
   const headerMacros = scaledData?.totals
-  ? {
-      protein: scaledData.totals.protein_g,
-      carbs: scaledData.totals.carbs_g,
-      fats: scaledData.totals.fats_g,
-    }
-  : displayMeal.macros
-  ? {
-      protein: displayMeal.macros.protein,
-      carbs: displayMeal.macros.carbs,
-      fats: displayMeal.macros.fats,
-    }
-  : null;
+    ? {
+        protein: scaledData.totals.protein_g,
+        carbs: scaledData.totals.carbs_g,
+        fats: scaledData.totals.fats_g,
+      }
+    : displayMeal.macros
+    ? {
+        protein: displayMeal.macros.protein,
+        carbs: displayMeal.macros.carbs,
+        fats: displayMeal.macros.fats,
+      }
+    : null;
 
   console.log("[Recipe] headerMacros", headerMacros);
 
   useEffect(() => {
-  async function load() {
-    setLoading(true);
-    setError(null);
+    async function load() {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const mealId = meal?.id || null;
+      try {
+        console.log("[Recipe] mealPlanItemId param:", mealPlanItemId);
 
-      console.log("[Recipe] meal keys", Object.keys(meal || {}));
-      console.log("[Recipe] mealId resolved to", mealId);
+        // If no param, we're on /recipe without persistence
+        if (!mealPlanItemId) {
+          console.warn("[Recipe] Missing mealPlanItemId. Showing state meal or fallback.");
+          setScaledData(null);
+          return;
+        }
 
-      if (!mealId) {
+        // Fetch the “meal-shaped” object for this meal plan item
+        const itemRes = await getMealPlanItemDetails(mealPlanItemId);
+
+        console.log("[Recipe] getMealPlanItemDetails ok?", itemRes.ok);
+        console.log("[Recipe] getMealPlanItemDetails error", itemRes.error);
+
+        if (!itemRes.ok) {
+          setError(itemRes.error || "Could not load this meal.");
+          setScaledData(null);
+          return;
+        }
+
+        const fetchedMeal = itemRes.data;
+        setMeal(fetchedMeal);
+
+        const mealId = fetchedMeal?.id || null;
+        if (!mealId) {
+          setError("Meal id missing on fetched meal.");
+          setScaledData(null);
+          return;
+        }
+
+        const mealRes = await getMealWithIngredients(mealId);
+
+        console.log("[Recipe] getMealWithIngredients ok?", mealRes.ok);
+        console.log("[Recipe] mealRes.error", mealRes.error);
+        console.log("[Recipe] meal ingredient rows len", mealRes.data?.length);
+
+        if (!mealRes.ok) {
+          setError(mealRes.error || "Could not load meal ingredients.");
+          setScaledData(null);
+          return;
+        }
+
+        setScaledData({
+          scaledIngredients: mealRes.data || [],
+          totals: null,
+        });
+      } catch (err) {
+        console.error("[Recipe] load error", err);
+        setError(err.message || "Could not load meal.");
         setScaledData(null);
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      const mealRes = await getMealWithIngredients(mealId);
-
-      console.log("[Recipe] getMealWithIngredients ok?", mealRes.ok);
-      console.log("[Recipe] mealRes.error", mealRes.error);
-      console.log("[Recipe] meal ingredient rows len", mealRes.data?.length);
-      console.log("[Recipe] first row", mealRes.data?.[0]);
-
-      if (!mealRes.ok) {
-        setError(mealRes.error || "Could not load meal ingredients.");
-        setScaledData(null);
-        return;
-      }
-
-      // Use the rows directly for the UI (grams come from row.grams)
-      setScaledData({
-        scaledIngredients: mealRes.data || [],
-        totals: null, // header should fall back to displayMeal.macros
-      });
-    } catch (err) {
-      console.error("[Recipe] load error", err);
-      setError(err.message || "Could not load meal.");
-      setScaledData(null);
-    } finally {
-      setLoading(false);
     }
-  }
 
-  load();
-}, [meal]);
+    load();
+  }, [mealPlanItemId]);
 
-const instructionsList = (() => {
-  const raw = displayMeal.instructions || "";
-  if (typeof raw === "string" && raw.trim().length > 0) {
-    return raw
-      .split(/\r?\n/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-  return null;
-})();
+  const instructionsList = (() => {
+    const raw = displayMeal.instructions || "";
+    if (typeof raw === "string" && raw.trim().length > 0) {
+      return raw
+        .split(/\r?\n/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    return null;
+  })();
 
-console.log("[Recipe] instructions preview", displayMeal.instructions);
+  console.log("[Recipe] instructions preview", displayMeal.instructions);
 
-const rows = scaledData?.scaledIngredients || [];
+  const rows = scaledData?.scaledIngredients || [];
 
-const isSpice = (row) =>
-  String(row?.ingredient?.category || "")
-    .trim()
-    .toLowerCase() === "spice";
+  const isSpice = (row) =>
+    String(row?.ingredient?.category || "").trim().toLowerCase() === "spice";
 
-const mainIngredients = rows.filter((r) => !isSpice(r));
-const spices = rows.filter((r) => isSpice(r));
+  const mainIngredients = rows.filter((r) => !isSpice(r));
+  const spices = rows.filter((r) => isSpice(r));
 
 
   return (
@@ -209,25 +222,21 @@ const spices = rows.filter((r) => isSpice(r));
                 <h3>Ingredients</h3>
                 <h3>
                   {!ingredientsOpen && (
-                    <IoIosArrowDown
-                      onClick={() => setIngredientsOpen(true)}
-                    />
+                    <IoIosArrowDown onClick={() => setIngredientsOpen(true)} />
                   )}
                   {ingredientsOpen && (
-                    <IoIosArrowUp
-                      onClick={() => setIngredientsOpen(false)}
-                    />
+                    <IoIosArrowUp onClick={() => setIngredientsOpen(false)} />
                   )}
                 </h3>
               </div>
+
               {ingredientsOpen && (
                 <div className={styles.macropillContainer}>
                   {mainIngredients.map((ri, index) => {
                     const name =
-                      ri.ingredient?.name ||
-                      ri.ingredient_id ||
-                      `Ingredient ${index + 1}`;
+                      ri.ingredient?.name || ri.ingredient_id || `Ingredient ${index + 1}`;
                     const grams = Math.round(ri.grams ?? ri.default_grams ?? 0);
+
                     return (
                       <div
                         key={`${name}-${index}`}
@@ -239,7 +248,8 @@ const spices = rows.filter((r) => isSpice(r));
                     );
                   })}
 
-                  {(!scaledData || scaledData.scaledIngredients?.length === 0) &&
+                  {/* ✅ fallback should be based on mainIngredients since that's what we render */}
+                  {mainIngredients.length === 0 &&
                     INGREDIENTS.map((item, index) => (
                       <div
                         key={item}
@@ -272,10 +282,7 @@ const spices = rows.filter((r) => isSpice(r));
                   {spices.length > 0 ? (
                     spices.map((ri, index) => {
                       const name =
-                        ri.ingredient?.name ||
-                        ri.ingredient_id ||
-                        `Spice ${index + 1}`;
-
+                        ri.ingredient?.name || ri.ingredient_id || `Spice ${index + 1}`;
                       const grams = Math.round(ri.grams ?? ri.default_grams ?? 0);
 
                       return (
@@ -289,7 +296,10 @@ const spices = rows.filter((r) => isSpice(r));
                       );
                     })
                   ) : (
-                    <p className={styles.instructionText}>Spices coming soon 💚</p>
+                    // ✅ optional: make this look like a pill for UI consistency
+                    <div className={styles.macropill} style={{ animationDelay: `0s` }}>
+                      Spices coming soon 💚
+                    </div>
                   )}
                 </div>
               )}
