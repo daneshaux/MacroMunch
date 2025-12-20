@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import styles from "./EditMeals.module.css";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
-import { updateMealsPerDay, getCurrentUserProfile } from "@/lib/userApi";
+import { updateMealsPerDay, getCurrentUserProfile, markPlanStale } from "@/lib/userApi";
 
 function EditMealsPage() {
   const navigate = useNavigate();
@@ -28,14 +28,14 @@ function EditMealsPage() {
         const user = res.data;
 
         // ✅ Supabase column: meals_per_day
-        const apiMeals = user.meals_per_day ?? 3;
+        const apiMeals = user.meals_per_day ?? 4;
 
         setCurrentMeals(apiMeals);
         setMeals(apiMeals);
       } else {
-        // fallback to 3 if we can't fetch
-        setCurrentMeals(3);
-        setMeals(3);
+        // fallback to 4 if we can't fetch
+        setCurrentMeals(4);
+        setMeals(4);
         if (res.error) {
           console.warn("Could not load profile:", res.error);
         }
@@ -67,6 +67,7 @@ function EditMealsPage() {
       return;
     }
 
+    await markPlanStale("Meals per day updated");
     navigate("/profile");
   }
 

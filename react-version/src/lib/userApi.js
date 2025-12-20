@@ -152,38 +152,45 @@ export async function updateActivityLevel(activity) {
   return { ok: true, data };
 }
 
-// NEW: Specific helper for goal
+// NEW: Specific helper for goal (with debug)
 export async function updateGoal(goal) {
-  // 1) Get current user
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return {
-      ok: false,
-      error: userError?.message || "Not signed in.",
-    };
+    return { ok: false, error: userError?.message || "Not signed in." };
   }
 
-  // 2) Update their profile
-  const { data, error } = await supabase
+  console.log("[updateGoal] user.id:", user.id, "new goal:", goal);
+
+  const { data, error, count } = await supabase
     .from("profiles")
     .update({
       goal,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", user.id)
-    .select()
-    .single();
+    .select("*");
 
   if (error) {
     console.error("[Profiles] updateGoal error", error);
     return { ok: false, error: error.message };
   }
 
-  return { ok: true, data };
+  console.log("[updateGoal] updated rows:", data?.length, "count:", count);
+  console.log("[updateGoal] returned goal:", data?.[0]?.goal);
+
+  // 🔎 Immediately re-read from DB to confirm persistence
+  const check = await supabase
+    .from("profiles")
+    .select("user_id, goal, updated_at")
+    .eq("user_id", user.id);
+
+  console.log("[updateGoal] DB check after update:", check);
+
+  return { ok: true, data: data?.[0] ?? null };
 }
 
 
@@ -1175,7 +1182,7 @@ export async function getCurrentUserProfile() {
     .from("profiles")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("[Profiles] getCurrentUserProfile error", error);
@@ -1829,6 +1836,242 @@ export async function getMealPlanItemDetails(mealPlanItemId) {
   };
 }
 
+// NEW Update the current user's profile with a partial patch
+export async function updateCurrentUserProfile(patch) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, error: userError?.message || "Not signed in." };
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    console.error("[Profiles] updateCurrentUserProfile error", error);
+    return { ok: false, error: error.message };
+  }
+
+  if (!data) {
+    return { ok: false, error: "Profile not found for current user." };
+  }
+
+  return { ok: true, data };
+}
+
+// NEW Mark the current user's plan as stale (so a new plan is generated next time)
+export async function markPlanStale(reason = "Profile updated") {
+  return updateCurrentUserProfile({
+    plan_stale: true,
+    plan_stale_reason: reason,
+    plan_stale_at: new Date().toISOString(),
+  });
+}
+
+// NEW Recompute smart macros based on current profile and save them
+export async function recomputeAndSaveSmartMacros() {
+  const profileRes = await getCurrentUserProfile();
+  if (!profileRes.ok || !profileRes.data) {
+    return { ok: false, error: profileRes.error || "Could not load profile." };
+  }
+
+  const p = profileRes.data;
+
+  // derive age from dob (since your calculator wants age)
+  const age = (() => {
+    if (!p.dob) return null;
+    const dob = new Date(p.dob);
+    if (Number.isNaN(dob.getTime())) return null;
+
+    const today = new Date();
+    let years = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) years--;
+    return years;
+  })();
+
+  const macros = computeSmartMacros({
+    age,
+    weightKg: p.weight_kg,
+    heightCm: p.height_cm,
+    activity: p.activity_level,
+    sex: p.metabolism_sex,
+    goal: p.goal,
+  });
+
+  if (!macros) {
+    return {
+      ok: false,
+      error: "Missing age/weight/height to compute macros.",
+    };
+  }
+
+  // Save macro fields back to profile
+  return updateCurrentUserProfile({
+    macros_mode: "smart",
+    macros_kcal: macros.kcal,
+    macros_protein_g: macros.proteinG,
+    macros_carbs_g: macros.carbsG,
+    macros_fat_g: macros.fatsG,
+  });
+}
+
+function ageFromDobString(dobStr) {
+  if (!dobStr) return null;
+  const [year, month, day] = String(dobStr).split("-");
+  if (!year || !month || !day) return null;
+  return dobToAge(year, month, day);
+}
+
+export async function regenerateMealPlanForCurrentUser({ reason = "User regenerated plan" } = {}) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, error: userError?.message || "Not signed in." };
+  }
+
+  // 1) Profile
+  const profRes = await getCurrentUserProfile();
+  if (!profRes.ok || !profRes.data) {
+    return { ok: false, error: profRes.error || "Could not load profile." };
+  }
+  const profile = profRes.data;
+
+  // 2) Compute macros
+  const age = ageFromDobString(profile.dob);
+  const weightKg = profile.weight_kg;
+  const heightCm = profile.height_cm;
+
+  const activity = mapActivity(profile.activity_level); // ⚠️ only if activity_level stored as UI values
+  const sex = mapSexForApi(profile.metabolism_sex);
+  const goal = profile.goal || "maintain";
+
+  const macros = computeSmartMacros({
+    age,
+    weightKg,
+    heightCm,
+    activity,
+    sex,
+    goal,
+  });
+
+  if (!macros) {
+    return {
+      ok: false,
+      error: "Missing profile data (age/weight/height) to compute macros.",
+    };
+  }
+
+  // 3) Pick meals (MVP: random from meals table)
+  const mealsPerDay = Number(profile.meals_per_day || 4);
+
+  const { data: meals, error: mealsErr } = await supabase
+    .from("meals")
+    .select("id")
+    .limit(200);
+
+  if (mealsErr) return { ok: false, error: mealsErr.message };
+  if (!meals?.length) return { ok: false, error: "No meals exist yet to generate a plan." };
+
+  const chosen = [...meals].sort(() => Math.random() - 0.5).slice(0, mealsPerDay);
+
+ // 4) Find latest plan (if any)
+const { data: existingPlan, error: existingErr } = await supabase
+  .from("meal_plans")
+  .select("id")
+  .eq("user_id", user.id)
+  .order("generated_for", { ascending: false })
+  .limit(1)
+  .maybeSingle();
+
+if (existingErr) return { ok: false, error: existingErr.message };
+
+// 5) Upsert behavior: update if exists, else insert
+let plan;
+
+if (existingPlan?.id) {
+  const { data: updated, error: updErr } = await supabase
+    .from("meal_plans")
+    .update({
+      generated_for: new Date().toISOString(),
+      macros_used: {
+        calories: macros.kcal,
+        protein_g: macros.proteinG,
+        carbs_g: macros.carbsG,
+        fats_g: macros.fatsG,
+      },
+    })
+    .eq("id", existingPlan.id)
+    .select()
+    .single();
+
+  if (updErr) return { ok: false, error: updErr.message };
+  plan = updated;
+
+  // Clear old items
+  const { error: delErr } = await supabase
+    .from("meal_plan_items")
+    .delete()
+    .eq("meal_plan_id", plan.id);
+
+  if (delErr) return { ok: false, error: delErr.message };
+} else {
+  const { data: inserted, error: insErr } = await supabase
+    .from("meal_plans")
+    .insert({
+      user_id: user.id,
+      generated_for: new Date().toISOString(),
+      macros_used: {
+        calories: macros.kcal,
+        protein_g: macros.proteinG,
+        carbs_g: macros.carbsG,
+        fats_g: macros.fatsG,
+      },
+    })
+    .select()
+    .single();
+
+  if (insErr) return { ok: false, error: insErr.message };
+  plan = inserted;
+}
+
+// Now insert new items
+const items = chosen.map((m, idx) => ({
+  meal_plan_id: plan.id,
+  meal_id: m.id,
+  sequence_index: idx,
+}));
+
+const { error: itemsErr } = await supabase.from("meal_plan_items").insert(items);
+if (itemsErr) return { ok: false, error: itemsErr.message };
+
+  // 6) Clear stale + store computed macros on profile
+  const clearRes = await updateCurrentUserProfile({
+    macros_mode: "smart",
+    macros_kcal: macros.kcal,
+    macros_protein_g: macros.proteinG,
+    macros_carbs_g: macros.carbsG,
+    macros_fat_g: macros.fatsG,
+    plan_stale: false,
+    plan_stale_reason: null,
+    plan_stale_at: null,
+  });
+
+  if (!clearRes.ok) return { ok: false, error: clearRes.error };
+
+  return { ok: true, data: { planId: plan.id } };
+}
+
 export async function createUserProfile({
   firstName,
   lastName,
@@ -1860,4 +2103,5 @@ export async function createUserProfile({
     method: "POST",
     body,
   });
+
 }

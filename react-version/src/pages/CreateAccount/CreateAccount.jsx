@@ -155,7 +155,10 @@ const profileRes = await upsertProfile({
   activity_level: activity,
   metabolism_sex: gender,
   goal: "maintain",
-  meals_per_day: 3,
+  meals_per_day: 4,
+  plan_stale: true,
+  plan_stale_reason: "New account",
+  plan_stale_at: new Date().toISOString(),
 });
 
 if (!profileRes.ok) {

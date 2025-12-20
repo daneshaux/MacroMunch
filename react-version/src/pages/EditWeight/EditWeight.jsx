@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import styles from "./EditWeight.module.css";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
-import { getCurrentUserProfile, updateWeightKg } from "@/lib/userApi";
+import { getCurrentUserProfile, updateWeightKg, recomputeAndSaveSmartMacros, markPlanStale } from "@/lib/userApi";
 import { lbsToKg, kgToLbs } from "@/lib/conversions";
 
 const MIN_WEIGHT = 60;
@@ -117,6 +117,14 @@ function EditWeight() {
       return;
     }
 
+    // Recompute macros now that weight has changed
+    const macrosRes = await recomputeAndSaveSmartMacros();
+    if (!macrosRes.ok) {
+      console.warn("[EditWeight] macros recompute failed:", macrosRes.error);
+      // You can choose: block save or allow save. MVP: allow save.
+    }
+
+    await markPlanStale("Weight updated");
     navigate("/profile");
   }
 

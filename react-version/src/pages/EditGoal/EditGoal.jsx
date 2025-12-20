@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import styles from "../EditMeals/EditMeals.module.css"; // reuse the same layout styles
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
-import { getCurrentUserProfile, updateGoal } from "@/lib/userApi";
+import { getCurrentUserProfile, updateGoal, markPlanStale } from "@/lib/userApi";
 
 const GOAL_OPTIONS = [
   {
@@ -67,6 +67,7 @@ function EditGoalPage() {
 
   async function handleSave() {
     // nothing changed → just go back
+    console.log("[EditGoal] handleSave fired. goal:", goal, "currentGoal:", currentGoal);
     if (goal === currentGoal) {
       navigate(-1);
       return;
@@ -84,6 +85,7 @@ function EditGoalPage() {
       return;
     }
 
+    await markPlanStale("Goal updated");
     // success → back to Profile
     navigate("/profile");
   }

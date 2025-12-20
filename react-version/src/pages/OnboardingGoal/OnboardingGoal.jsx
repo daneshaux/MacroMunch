@@ -1,4 +1,5 @@
 // src/pages/OnboardingGoal/OnboardingGoal.jsx
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import OnboardingHeader from "@/components/OnboardingHeader/OnboardingHeader";
 import OnboardingGoalCard from "@/components/OnboardingGoalCard/OnboardingGoalCard";
@@ -10,6 +11,7 @@ import gainIcon from "@/assets/onboarding/goal-gain-icon.svg";
 import loseBg from "@/assets/onboarding/goal-lose-bg.svg";
 import maintainBg from "@/assets/onboarding/goal-maintain-bg.svg";
 import gainBg from "@/assets/onboarding/goal-gain-bg.svg";
+import { updateGoal } from "@/lib/userApi";
 
 const GOAL_OPTIONS = [
   {
@@ -39,14 +41,33 @@ function OnboardingGoal() {
   const navigate = useNavigate();
   const { state, setGoal, resetOnboarding } = useOnboarding();
 
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
   function handleBack() {
     // Back from step 1 → cancel onboarding and return home
     resetOnboarding();
     navigate("/home");
   }
 
-  function handleSelectGoal(value) {
+  async function handleSelectGoal(value) {
+    if (saving) return;
+
+    // Update UI immediately so selection highlights
     setGoal(value);
+
+    setSaving(true);
+    setError("");
+
+    // ✅ Persist to Supabase
+    const res = await updateGoal(value);
+    if (!res.ok) {
+      setSaving(false);
+      setError(res.error || "Could not save your goal. Please try again.");
+      return;
+    }
+
+    setSaving(false);
     navigate("/onboarding/plan-build");
   }
 

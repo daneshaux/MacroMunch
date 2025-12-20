@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader/AppHeader";
 import { useNavigate } from "react-router-dom";
-import { getLatestSavedMealPlanForCurrentUser } from "@/lib/userApi";
+import { getLatestSavedMealPlanForCurrentUser, getCurrentUserProfile, regenerateMealPlanForCurrentUser } from "@/lib/userApi";
 import styles from "./HomeMealPlan.module.css";
 import HomeEmptyState from "@/pages/HomeEmptyState/HomeEmptyState";
 
@@ -61,38 +61,70 @@ function HomeMealPlan({ firstName = "there" }) {
   const [error, setError] = useState(null);
   const [planMeals, setPlanMeals] = useState([]);
   const [planMeta, setPlanMeta] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [regenLoading, setRegenLoading] = useState(false);
 
   // 🔹 Load latest saved plan on mount
-  useEffect(() => {
-    async function loadPlan() {
-      setLoading(true);
-      setError(null);
+  async function loadPlan() {
+  setLoading(true);
+  setError(null);
 
-      try {
-        const res = await getLatestSavedMealPlanForCurrentUser();
-        console.log("▶️ Latest saved meal plan:", res);
+  try {
+    const [planRes, profileRes] = await Promise.all([
+      getLatestSavedMealPlanForCurrentUser(),
+      getCurrentUserProfile(),
+    ]);
 
-        if (!res.ok) {
-          setError(res.error || "Could not load your meal plan.");
-          setPlanMeals([]);
-          return;
-        }
+    console.log("▶️ Latest saved meal plan:", planRes);
+    console.log("👤 Current profile:", profileRes);
 
-        const { meals, plan } = res.data;
-        setPlanMeals(meals || []);
-        setPlanMeta(plan || null);
+    if (profileRes.ok) setProfile(profileRes.data);
+    else setProfile(null);
 
-      } catch (err) {
-        console.error("[HomeMealPlan] loadPlan error", err);
-        setError(err.message || "Unknown error while loading plan.");
-        setPlanMeals([]);
-      } finally {
-        setLoading(false);
-      }
+    if (!planRes.ok) {
+      setError(planRes.error || "Could not load your meal plan.");
+      setPlanMeals([]);
+      setPlanMeta(null);
+      return;
     }
 
-    loadPlan();
-  }, []);
+    const { meals, plan } = planRes.data;
+    setPlanMeals(Array.isArray(meals) ? meals : []);
+    setPlanMeta(plan || null);
+  } catch (err) {
+    console.error("[HomeMealPlan] loadPlan error", err);
+    setError(err.message || "Unknown error while loading plan.");
+    setPlanMeals([]);
+    setPlanMeta(null);
+    setProfile(null);
+  } finally {
+    setLoading(false);
+  }
+}
+
+useEffect(() => {
+  loadPlan();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
+async function handleRegenerate() {
+  setRegenLoading(true);
+  setError(null);
+
+  const res = await regenerateMealPlanForCurrentUser({
+    reason: "User tapped regenerate",
+  });
+
+  setRegenLoading(false);
+
+  if (!res.ok) {
+    setError(res.error || "Could not regenerate plan.");
+    return;
+  }
+
+  // Reload plan + profile so banner disappears + new plan shows
+  await loadPlan();
+}
 
     // ✅ Do we actually have a saved plan?
   const hasRealPlan = Array.isArray(planMeals) && planMeals.length > 0;
@@ -157,6 +189,22 @@ function HomeMealPlan({ firstName = "there" }) {
         </p>
       </section>
 
+      {!loading && hasRealPlan && profile?.plan_stale && (
+        <div className={styles.staleBanner}>
+          <p className={styles.staleText}>
+            Your settings changed — your meal plan might be out of date.
+          </p>
+          <button
+            type="button"
+            className={styles.staleButton}
+            onClick={handleRegenerate}
+            disabled={regenLoading}
+          >
+            {regenLoading ? "Regenerating…" : "Regenerate plan"}
+          </button>
+        </div>
+      )}
+
       <section className={styles.macrosCard}>
         <div className={styles.macrosHeader}>
           <p className={styles.macrosLabel}>Today&apos;s macros</p>
@@ -207,8 +255,7 @@ function HomeMealPlan({ firstName = "there" }) {
 
           {!loading && error && (
             <p className={styles.errorText}>
-              We couldn&apos;t load your latest plan yet. Showing a sample day
-              instead.
+              We couldn&apos;t load your latest plan yet. Please try again.
             </p>
           )}
 

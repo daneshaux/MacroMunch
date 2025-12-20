@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import styles from "./EditHeight.module.css";
 import Select from "@/components/Select/Select";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
-import { getCurrentUserProfile, updateHeightCm } from "@/lib/userApi";
+import { getCurrentUserProfile, updateHeightCm, markPlanStale } from "@/lib/userApi";
 import { ftInToCm, cmToFtIn } from "@/lib/conversions";
 
 const FEET_OPTIONS = Array.from({ length: 6 }, (_, i) => {
@@ -90,6 +90,7 @@ function EditHeightPage() {
       return;
     }
 
+    await markPlanStale("Height updated");
     navigate("/profile");
   }
 

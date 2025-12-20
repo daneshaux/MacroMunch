@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import styles from "./EditAge.module.css";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
-import { getCurrentUserProfile, updateDob } from "@/lib/userApi";
+import { getCurrentUserProfile, updateDob, markPlanStale } from "@/lib/userApi";
 
 const MIN_AGE = 13;
 const MAX_AGE = 100;
@@ -155,6 +155,7 @@ function EditAgePage() {
       return;
     }
 
+    await markPlanStale("Age updated");
     setIsDirty(false);
     navigate("/profile");
   }

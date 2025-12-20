@@ -92,14 +92,13 @@ function OnboardingFlavorProfiles() {
   }
 
   function handleSkip() {
-    // If they skip, we still save “no extra flavors” and finish onboarding
-    setFlavorProfiles([]);
-    finalizeAndGo();
-  }
+  setFlavorProfiles([]);
+  navigate("/onboarding/loading");
+}
 
-  function handleContinue() {
-    finalizeAndGo();
-  }
+function handleContinue() {
+  navigate("/onboarding/loading");
+}
 
   return (
     <main className={styles.screen}>

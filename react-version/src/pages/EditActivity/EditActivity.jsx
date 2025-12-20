@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "./EditActivity.module.css";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
 import ActivityLevel from "@/components/ActivityLevel/ActivityLevel";
-import { getCurrentUserProfile, updateActivityLevel } from "@/lib/userApi";
+import { getCurrentUserProfile, updateActivityLevel, markPlanStale } from "@/lib/userApi";
 
 function EditActivityPage() {
   const navigate = useNavigate();
@@ -65,6 +65,7 @@ function EditActivityPage() {
       return;
     }
 
+    await markPlanStale("Activity level updated");
     navigate("/profile");
   }
 
