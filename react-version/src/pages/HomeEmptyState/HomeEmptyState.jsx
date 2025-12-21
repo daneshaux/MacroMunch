@@ -1,13 +1,35 @@
 // src/pages/HomeEmptyState/HomeEmptyState.jsx
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./HomeEmptyState.module.css";
+import { getCurrentUserProfile } from "@/lib/userApi";
 
 import AppHeader from "@/components/AppHeader/AppHeader";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
 
-function HomeEmptyState({ firstName = "there" }) {
+function HomeEmptyState() {
   const navigate = useNavigate();
-  const safeName = firstName?.trim() || "there";
+
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadProfile() {
+      const res = await getCurrentUserProfile();
+      if (!mounted) return;
+
+      if (res.ok) setProfile(res.data);
+      else setProfile(null);
+    }
+
+    loadProfile();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const safeName = profile?.first_name?.trim() || "friend";
 
   function handleGenerate() {
     // Kick off onboarding flow (Step 1: Goal)

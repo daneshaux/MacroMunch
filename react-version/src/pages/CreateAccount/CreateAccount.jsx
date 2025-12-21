@@ -149,6 +149,7 @@ const dob = `${dobYear}-${dobMonth.padStart(2, "0")}-${dobDay.padStart(2, "0")}`
 const profileRes = await upsertProfile({
   userId: signUp.user.id,
   email: email.trim(),
+  first_name: first.trim() || null,
   dob,
   weight_kg: weightKg,
   height_cm: heightCm,

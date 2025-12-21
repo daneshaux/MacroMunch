@@ -4,7 +4,6 @@ import OnboardingHeader from "@/components/OnboardingHeader/OnboardingHeader";
 import OnboardingOptionCard from "@/components/OnboardingOptionCard/OnboardingOptionCard";
 import PrimaryButton from "@/components/PrimaryButton/PrimaryButton";
 import { useOnboarding } from "@/context/OnboardingContext";
-import { updateDietSettings, markOnboardingComplete,generateMealPlanForCurrentUser} from "@/lib/userApi";
 
 import creamyBg from "@/assets/onboarding/flavorProfiles/creamy.webp";
 import savoryBg from "@/assets/onboarding/flavorProfiles/savory.webp";
@@ -30,8 +29,7 @@ const FLAVOR_OPTIONS = [
 
 function OnboardingFlavorProfiles() {
   const navigate = useNavigate();
-  const { state, setFlavorProfiles, setPlanReady } = useOnboarding();
-  //                                  ^^^^^^^^^^^  grab it here
+  const { state, setFlavorProfiles } = useOnboarding();
 
   const selected = state.flavorProfiles || [];
 
@@ -47,57 +45,14 @@ function OnboardingFlavorProfiles() {
     }
   }
 
-    async function finalizeAndGo() {
-    // 1) Build payload from onboarding state
-    const payload = {
-      dietaryPreferences: state.dietaryPreferences,
-      allergies: state.allergies,
-      eatingStyles: state.eatingStyles,
-      spiceLevel: state.spiceLevel,
-      numericSpice: state.spiceLevel, // you were already logging both
-      flavorProfiles: state.flavorProfiles,
-    };
-
-    console.log("[Onboarding] finalizeAndGo payload:", payload);
-
-    // 2) Save diet settings
-    const dietRes = await updateDietSettings(payload);
-    console.log("[Onboarding] updateDietSettings result:", dietRes);
-    if (!dietRes.ok) {
-      console.error("Failed to save diet settings:", dietRes.error);
-      // optional: show toast
-      return;
-    }
-
-    // 3) Generate + save meal plan for this user
-    const planRes = await generateMealPlanForCurrentUser();
-    console.log("[Onboarding] generateMealPlanForCurrentUser result:", planRes);
-    if (!planRes.ok) {
-      console.error("Failed to generate meal plan:", planRes.error);
-      // optional: still continue or block here depending on UX
-      // return;
-    }
-
-    // 4) Mark onboarding as complete
-    const completeRes = await markOnboardingComplete();
-    console.log("[Onboarding] markOnboardingComplete result:", completeRes);
-    if (!completeRes.ok) {
-      console.error("Failed to mark onboarding complete:", completeRes.error);
-      // optional: toast, but we can still proceed
-    }
-
-    // 5) Flip in-memory flag + go to meal plan
-    setPlanReady(true);
-    navigate("/meal-plan");
-  }
-
-  function handleSkip() {
-  setFlavorProfiles([]);
-  navigate("/onboarding/loading");
+ function handleSkip() {
+  setFlavorProfiles([]);                 // ✅ actually clears selections
+  navigate("/onboarding/loading", { replace: true });
 }
 
 function handleContinue() {
-  navigate("/onboarding/loading");
+  // selected is already in state from toggleFlavor, so no extra work needed
+  navigate("/onboarding/loading", { replace: true });
 }
 
   return (

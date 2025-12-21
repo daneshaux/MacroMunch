@@ -91,13 +91,17 @@ export async function signUpWithPassword({
 export async function upsertProfile({
   userId,
   email,
-  dob,           // 'YYYY-MM-DD'
+  first_name = null,
+  dob, // 'YYYY-MM-DD'
   weight_kg,
   height_cm,
   activity_level,
   metabolism_sex,
   goal = "maintain",
   meals_per_day = 4,
+  plan_stale = true,
+  plan_stale_reason = null,
+  plan_stale_at = null,
 }) {
   console.log("[Profiles] upsertProfile for", userId);
 
@@ -105,8 +109,9 @@ export async function upsertProfile({
     .from("profiles")
     .upsert(
       {
-        user_id: userId,             // <-- matches your table column
-        email: email.toLowerCase(),  // <-- NEW: store email
+        user_id: userId,
+        email: email.toLowerCase(),
+        first_name: first_name?.trim() || null,
         dob,
         weight_kg,
         height_cm,
@@ -114,11 +119,12 @@ export async function upsertProfile({
         metabolism_sex,
         goal,
         meals_per_day,
+        plan_stale,
+        plan_stale_reason,
+        plan_stale_at,
         updated_at: new Date().toISOString(),
       },
-      {
-        onConflict: "user_id",       // we made user_id unique
-      }
+      { onConflict: "user_id" }
     )
     .select()
     .single();

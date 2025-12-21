@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import styles from "./Recipe.module.css";
 import { IoIosArrowDown, IoIosArrowUp } from "react-icons/io";
 import { useEffect, useState } from "react";
-import { getMealWithIngredients, getMealPlanItemDetails } from "@/lib/userApi";
+import { getMealWithIngredients, getMealPlanItemDetails, getCurrentUserProfile } from "@/lib/userApi";
 
 const DAILY_MACROS = [
   { key: "Protein", value: "32 g" },
@@ -26,7 +26,7 @@ const SPICES = [
   "1 tsp cinnamon",
 ];
 
-function Recipe({ firstName = "there" }) {
+function Recipe() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { mealPlanItemId } = useParams();
@@ -57,8 +57,9 @@ function Recipe({ firstName = "there" }) {
     displayMeal.readyIn ||
     (displayMeal.ready_in_minutes ? `${displayMeal.ready_in_minutes} min` : "— min");
 
-  const safeName = firstName?.trim() || "there";
 
+  const [profile, setProfile] = useState(null);
+  const safeName = profile?.first_name?.trim() || "there";
   const [ingredientsOpen, setIngredientsOpen] = useState(false);
   const [spicesOpen, setSpicesOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,23 @@ function Recipe({ firstName = "there" }) {
     : null;
 
   console.log("[Recipe] headerMacros", headerMacros);
+
+  useEffect(() => {
+  let mounted = true;
+
+  async function loadProfile() {
+    const res = await getCurrentUserProfile();
+    if (!mounted) return;
+
+    if (res.ok) setProfile(res.data);
+    else setProfile(null);
+  }
+
+  loadProfile();
+  return () => {
+    mounted = false;
+  };
+}, []);
 
   useEffect(() => {
     async function load() {

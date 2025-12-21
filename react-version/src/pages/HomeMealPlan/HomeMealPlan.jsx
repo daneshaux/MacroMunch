@@ -52,9 +52,8 @@ const MEAL_PLAN = [
   },
 ];
 
-function HomeMealPlan({ firstName = "there" }) {
+function HomeMealPlan() {
   const navigate = useNavigate();
-  const safeName = firstName?.trim() || "there";
 
   // 🔹 New state for live meal plan
   const [loading, setLoading] = useState(true);
@@ -62,6 +61,7 @@ function HomeMealPlan({ firstName = "there" }) {
   const [planMeals, setPlanMeals] = useState([]);
   const [planMeta, setPlanMeta] = useState(null);
   const [profile, setProfile] = useState(null);
+  const safeName = profile?.first_name?.trim() || "there";
   const [regenLoading, setRegenLoading] = useState(false);
 
   // 🔹 Load latest saved plan on mount
@@ -135,7 +135,7 @@ async function handleRegenerate() {
 
   // ✅ Gate: if done loading and no plan, show empty state
   if (!loading && !hasRealPlan) {
-    return <HomeEmptyState firstName={safeName} />;
+   return <HomeEmptyState />;
   }
 
   // Prefer the plan's macros_used for the header; fallback to summing meal macros
@@ -283,11 +283,14 @@ async function handleRegenerate() {
 
               return (
                 <article
-                  key={meal.id || index}
+                  key={meal.meal_plan_item_id ?? `${meal.id}-${meal.sequence_index ?? index}`}
                   className={styles.mealCard}
                   onClick={() => {
-                    if (meal.meal_plan_item_id) navigate(`/recipe/${meal.meal_plan_item_id}`);
-                    else navigate("/recipe"); // fallback for static MEAL_PLAN
+                    if (meal.meal_plan_item_id) {
+                      navigate(`/recipe/${meal.meal_plan_item_id}`);
+                    } else {
+                      navigate("/recipe"); // fallback for static MEAL_PLAN
+                    }
                   }}
                 >
                   <div className={styles.mealMedia}>

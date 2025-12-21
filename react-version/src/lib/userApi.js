@@ -6,6 +6,9 @@ import { computeSmartMacros } from "./macroCalculator";
 //OLD: Go backend helpers
 const API_BASE = import.meta.env.VITE_API_BASE_URL; // "https://macromunchservices.onrender.com"
 
+// To prevent concurrent plan generations
+let generatePlanInFlight = null;
+
 async function apiRequest(path, method = "GET", body) {
   const { data, error } = await supabase.auth.getSession();
 
@@ -675,7 +678,7 @@ function buildSimpleDailyLineup(meals, profile) {
 }
 
 // Generate a daily meal plan AND persist it to meal_plans + meal_plan_items
-export async function generateMealPlanForCurrentUser() {
+async function _generateMealPlanForCurrentUser() {
   // 0) Get the current auth user
   const {
     data: { user },
@@ -1089,6 +1092,24 @@ export async function generateMealPlanForCurrentUser() {
     });
   }
 
+  console.log("[MealPlans] about to clear plan_stale...");
+
+  // ✅ Plan fully generated + targets/scaling saved → clear stale flags
+  const clearRes = await updateCurrentUserProfile({
+    plan_stale: false,
+    plan_stale_reason: null,
+    plan_stale_at: null,
+  });
+
+  console.log("[MealPlans] clear plan_stale finished:", clearRes);
+
+  if (!clearRes.ok) {
+    console.error("[MealPlans] Failed to clear plan_stale", clearRes.error);
+    return { ok: false, error: clearRes.error || "Could not clear plan stale state." };
+  }
+
+  console.log("[MealPlans] ✅ returning ok:true from _generateMealPlanForCurrentUser");
+  
     return {
       ok: true,
       data: {
@@ -1102,6 +1123,21 @@ export async function generateMealPlanForCurrentUser() {
       },
     };
   }
+// SINGLETON in-flight promise to prevent concurrent generation
+export async function generateMealPlanForCurrentUser() {
+  if (generatePlanInFlight) return generatePlanInFlight;
+
+  generatePlanInFlight = (async () => {
+    try {
+      return await _generateMealPlanForCurrentUser();
+    } finally {
+      generatePlanInFlight = null;
+    }
+  })();
+
+  return generatePlanInFlight;
+}
+
 
 // 🔹 Force-clear spice level in profile (used when user skips spice)
 export async function clearSpicePreference() {
@@ -1187,6 +1223,11 @@ export async function getCurrentUserProfile() {
   if (error) {
     console.error("[Profiles] getCurrentUserProfile error", error);
     return { ok: false, error: error.message };
+  }
+
+  // If no profile row found
+  if (!data) {
+    return { ok: false, error: "Profile row not found for current user." };
   }
 
   return { ok: true, data };
