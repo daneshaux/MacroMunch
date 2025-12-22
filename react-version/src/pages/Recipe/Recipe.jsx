@@ -151,9 +151,14 @@ function Recipe() {
           return;
         }
 
+        const target = fetchedMeal?.target_macros || null;
+
+        const scaled = scaleMealLinesToTarget(mealRes.data || [], target);
+
         setScaledData({
-          scaledIngredients: mealRes.data || [],
-          totals: null,
+          scaledIngredients: scaled.scaledIngredients,
+          totals: scaled.totals,
+          notes: scaled.notes,
         });
       } catch (err) {
         console.error("[Recipe] load error", err);
@@ -187,6 +192,108 @@ function Recipe() {
 
   const mainIngredients = rows.filter((r) => !isSpice(r));
   const spices = rows.filter((r) => isSpice(r));
+
+  function clamp(g, minG, maxG) {
+  let out = Number(g) || 0;
+  const min = minG == null ? null : Number(minG);
+  const max = maxG == null ? null : Number(maxG);
+  if (Number.isFinite(min)) out = Math.max(out, min);
+  if (Number.isFinite(max) && max > 0) out = Math.min(out, max);
+  return out;
+}
+
+function totalsFrom(rows) {
+  return rows.reduce(
+    (acc, r) => {
+      const g = Number(r.scaled_grams ?? r.grams ?? r.default_grams) || 0;
+      const ing = r.ingredient || {};
+      acc.calories += g * (Number(ing.kcal_per_gram) || 0);
+      acc.protein_g += g * (Number(ing.protein_g_per_gram) || 0);
+      acc.carbs_g += g * (Number(ing.carbs_g_per_gram) || 0);
+      acc.fats_g += g * (Number(ing.fat_g_per_gram) || 0);
+      return acc;
+    },
+    { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 }
+  );
+}
+
+/**
+ * Scale only protein/carb/fat categories to match target macros.
+ * Keep veg/spice fixed.
+ */
+function scaleMealLinesToTarget(lines, target) {
+  if (!Array.isArray(lines) || lines.length === 0) {
+    return { scaledIngredients: [], totals: { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 }, notes: ["No ingredients to scale."] };
+  }
+
+  if (!target || typeof target !== "object") {
+    // No target? return as-is.
+    const passthrough = lines.map((l) => ({ ...l, scaled_grams: Number(l.grams ?? l.default_grams) || 0 }));
+    return { scaledIngredients: passthrough, totals: totalsFrom(passthrough), notes: ["Missing target macros; showing default grams."] };
+  }
+
+  const notes = [];
+  const PROTEIN_CATS = ["protein"];
+  const CARB_CATS = ["carb"];
+  const FAT_CATS = ["fat"];
+
+  // Start with current grams as the base
+  let working = lines.map((l) => ({
+    ...l,
+    scaled_grams: clamp(
+      Number(l.grams ?? l.default_grams) || 0,
+      l.min_grams,
+      l.max_grams
+    ),
+    category: String(l.ingredient?.category || "").toLowerCase().trim(),
+  }));
+
+  const sumCategory = (cats, key) =>
+    working
+      .filter((l) => cats.includes(l.category))
+      .reduce((acc, l) => {
+        const g = Number(l.scaled_grams) || 0;
+        const ing = l.ingredient || {};
+        const perG = Number(ing[key]) || 0;
+        return acc + g * perG;
+      }, 0);
+
+  // 2 passes helps when clamping prevents exact match
+  for (let pass = 0; pass < 2; pass += 1) {
+    // Protein
+    const curP = sumCategory(PROTEIN_CATS, "protein_g_per_gram");
+    const mp = curP > 0 ? Number(target.protein || target.protein_g || 0) / curP : 1;
+    if (!Number.isFinite(mp) || mp <= 0) notes.push("Protein scaler skipped (missing/zero protein lines).");
+    working = working.map((l) =>
+      PROTEIN_CATS.includes(l.category)
+        ? { ...l, scaled_grams: clamp(l.scaled_grams * (Number.isFinite(mp) ? mp : 1), l.min_grams, l.max_grams) }
+        : l
+    );
+
+    // Carbs
+    const curC = sumCategory(CARB_CATS, "carbs_g_per_gram");
+    const mc = curC > 0 ? Number(target.carbs || target.carbs_g || 0) / curC : 1;
+    if (!Number.isFinite(mc) || mc <= 0) notes.push("Carb scaler skipped (missing/zero carb lines).");
+    working = working.map((l) =>
+      CARB_CATS.includes(l.category)
+        ? { ...l, scaled_grams: clamp(l.scaled_grams * (Number.isFinite(mc) ? mc : 1), l.min_grams, l.max_grams) }
+        : l
+    );
+
+    // Fats
+    const curF = sumCategory(FAT_CATS, "fat_g_per_gram");
+    const mf = curF > 0 ? Number(target.fats || target.fat || target.fats_g || 0) / curF : 1;
+    if (!Number.isFinite(mf) || mf <= 0) notes.push("Fat scaler skipped (missing/zero fat lines).");
+    working = working.map((l) =>
+      FAT_CATS.includes(l.category)
+        ? { ...l, scaled_grams: clamp(l.scaled_grams * (Number.isFinite(mf) ? mf : 1), l.min_grams, l.max_grams) }
+        : l
+    );
+  }
+
+  const totals = totalsFrom(working);
+  return { scaledIngredients: working, totals, notes };
+}
 
 
   return (
@@ -253,7 +360,7 @@ function Recipe() {
                   {mainIngredients.map((ri, index) => {
                     const name =
                       ri.ingredient?.name || ri.ingredient_id || `Ingredient ${index + 1}`;
-                    const grams = Math.round(ri.grams ?? ri.default_grams ?? 0);
+                    const grams = Math.round(ri.scaled_grams ?? ri.grams ?? ri.default_grams ?? 0);
 
                     return (
                       <div
@@ -301,7 +408,7 @@ function Recipe() {
                     spices.map((ri, index) => {
                       const name =
                         ri.ingredient?.name || ri.ingredient_id || `Spice ${index + 1}`;
-                      const grams = Math.round(ri.grams ?? ri.default_grams ?? 0);
+                      const grams = Math.round(ri.scaled_grams ?? ri.grams ?? ri.default_grams ?? 0);
 
                       return (
                         <div

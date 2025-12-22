@@ -677,6 +677,191 @@ function buildSimpleDailyLineup(meals, profile) {
   }
 }
 
+// Scale meal lines to hit target macros
+function totalsFromLines(arr) {
+  return (arr || []).reduce(
+    (acc, l) => {
+      const g = Number(l.grams) || 0;
+      const ing = l.ingredient || {};
+      acc.calories += g * (Number(ing.kcal_per_gram) || 0);
+      acc.protein  += g * (Number(ing.protein_g_per_gram) || 0);
+      acc.carbs    += g * (Number(ing.carbs_g_per_gram) || 0);
+      acc.fats     += g * (Number(ing.fat_g_per_gram) || 0);
+      return acc;
+    },
+    { calories: 0, protein: 0, carbs: 0, fats: 0 }
+  );
+}
+
+function roundScaledPayload(t) {
+  return {
+    calories: Math.round(t.calories || 0),
+    protein: Math.round(t.protein || 0),
+    carbs: Math.round(t.carbs || 0),
+    fats: Math.round(t.fats || 0),
+  };
+}
+
+function clampGrams(g, minG, maxG) {
+  let out = Number(g) || 0;
+  const min = minG == null ? null : Number(minG);
+  const max = maxG == null ? null : Number(maxG);
+
+  if (Number.isFinite(min)) out = Math.max(out, min);
+  if (Number.isFinite(max) && max > 0) out = Math.min(out, max);
+  return out;
+}
+
+function stepRound(g, step) {
+  const s = Number(step);
+  if (!Number.isFinite(s) || s <= 0) return g;
+  return Math.round(g / s) * s;
+}
+
+function normRole(role) {
+  return String(role || "").toLowerCase().trim();
+}
+
+function isAnyLever(role) {
+  const r = normRole(role);
+  return r.startsWith("lever_"); // lever_protein, lever_carb, lever_fat
+}
+
+function isLeverFor(role, macro) {
+  return normRole(role) === `lever_${macro}`; // macro: "protein" | "carb" | "fat"
+}
+
+
+/**
+ * Day balancing: nudge lever grams across meals to hit daily macros tightly.
+ * - Only touches rows where scaling_role === "lever"
+ * - Uses step_grams
+ * - Respects min/max
+ */
+function balanceDayAcrossItems(itemStates, dailyTarget, { tolerance = 3, maxIters = 600 } = {}) {
+  const getDayTotals = () => {
+    return itemStates.reduce(
+      (acc, it) => {
+        const t = totalsFromLines(it.working);
+        acc.calories += t.calories;
+        acc.protein += t.protein;
+        acc.carbs += t.carbs;
+        acc.fats += t.fats;
+        return acc;
+      },
+      { calories: 0, protein: 0, carbs: 0, fats: 0 }
+    );
+  };
+
+  const residual = () => {
+    const cur = getDayTotals();
+    return {
+      protein: (dailyTarget.protein || 0) - cur.protein,
+      carbs: (dailyTarget.carbs || 0) - cur.carbs,
+      fats: (dailyTarget.fats || 0) - cur.fats,
+    };
+  };
+
+  const withinTol = (r) =>
+    Math.abs(r.protein) <= tolerance &&
+    Math.abs(r.carbs) <= tolerance &&
+    Math.abs(r.fats) <= tolerance;
+
+  // Pick best lever line to adjust for a macro.
+  // Uses "efficiency": target macro per gram / side effects per gram
+  function bestLeverFor(macroKey, direction /* +1 add, -1 remove */) {
+    let best = null;
+
+    for (let i = 0; i < itemStates.length; i++) {
+      const it = itemStates[i];
+      const lines = it.working;
+
+      for (let j = 0; j < lines.length; j++) {
+        const l = lines[j];
+        if (!isLeverFor(l.scaling_role, macroKey)) continue;
+
+        const ing = l.ingredient || {};
+        const p = Number(ing.protein_g_per_gram) || 0;
+        const c = Number(ing.carbs_g_per_gram) || 0;
+        const f = Number(ing.fat_g_per_gram) || 0;
+
+        const per =
+          macroKey === "protein" ? p :
+          macroKey === "carb" ? c : f;
+
+        if (per <= 0) continue;
+
+        const step = Number(l.step_grams) || 1;
+        const curG = Number(l.grams) || 0;
+
+        const minG = l.min_grams == null ? null : Number(l.min_grams);
+        const maxG = l.max_grams == null ? null : Number(l.max_grams);
+
+        const hasRoom =
+          direction > 0
+            ? (maxG == null || curG + step <= maxG + 1e-9)
+            : (minG == null || curG - step >= minG - 1e-9);
+
+        if (!hasRoom) continue;
+
+        const side =
+          macroKey === "protein" ? (c + f) :
+          macroKey === "carb" ? (p + f) :
+          (p + c);
+
+        const score = per / (side + 0.02);
+
+        if (!best || score > best.score) {
+          best = { itemIndex: i, lineIndex: j, score, step };
+        }
+      }
+    }
+
+    return best;
+  }
+
+  for (let iter = 0; iter < maxIters; iter++) {
+    const r = residual();
+    if (withinTol(r)) return { ok: true, notes: [`Balanced within ±${tolerance}g in ${iter} iters`], dayTotals: getDayTotals() };
+
+    // Biggest miss first
+    const order = [
+      { k: "protein", v: Math.abs(r.protein) },
+      { k: "carb", v: Math.abs(r.carbs) },
+      { k: "fat", v: Math.abs(r.fats) },
+    ].sort((a, b) => b.v - a.v);
+
+    let moved = false;
+
+    for (const m of order) {
+      const need = r[m.k];
+      if (Math.abs(need) <= tolerance) continue;
+
+      const dir = need > 0 ? +1 : -1;
+      const pick = bestLeverFor(m.k, dir);
+      if (!pick) continue;
+
+      const it = itemStates[pick.itemIndex];
+      const l = it.working[pick.lineIndex];
+
+      const step = Number(l.step_grams) || 1;
+      const next = clampGrams(stepRound((Number(l.grams) || 0) + dir * step, step), l.min_grams, l.max_grams);
+
+      if (next !== (Number(l.grams) || 0)) {
+        it.working[pick.lineIndex] = { ...l, grams: next };
+        moved = true;
+        break;
+      }
+    }
+
+    if (!moved) {
+      return { ok: false, notes: ["Stopped: no lever room left across day"], dayTotals: getDayTotals() };
+    }
+  }
+
+  return { ok: false, notes: ["Stopped: max iterations reached"], dayTotals: getDayTotals() };
+}
+
 // Generate a daily meal plan AND persist it to meal_plans + meal_plan_items
 async function _generateMealPlanForCurrentUser() {
   // 0) Get the current auth user
@@ -730,29 +915,70 @@ async function _generateMealPlanForCurrentUser() {
     };
   }
 
-  // 3) Compute macros_used snapshot: prefer profile, otherwise sum lineup base macros
-  const lineupTotals = lineup.reduce(
-    (acc, meal) => {
-      const kcal = Number(meal.base_kcal);
-      const protein = Number(meal.base_protein_g);
-      const carbs = Number(meal.base_carbs_g);
-      const fat = Number(meal.base_fat_g);
+  async function mealHasCompleteIngredients(mealId) {
+  const res = await getMealWithIngredients(mealId);
+  if (!res.ok) return false;
 
-      acc.calories += Number.isFinite(kcal) ? kcal : 0;
-      acc.protein_g += Number.isFinite(protein) ? protein : 0;
-      acc.carbs_g += Number.isFinite(carbs) ? carbs : 0;
-      acc.fats_g += Number.isFinite(fat) ? fat : 0;
-      return acc;
-    },
-    { calories: 0, protein_g: 0, carbs_g: 0, fats_g: 0 }
-  );
+  const rows = res.data || [];
+  if (rows.length === 0) return false;
 
-  const macrosUsed = {
-    calories: Number(profile.macros_kcal) || Math.round(lineupTotals.calories || 0),
-    protein_g: Number(profile.macros_protein_g) || Math.round(lineupTotals.protein_g || 0),
-    carbs_g: Number(profile.macros_carbs_g) || Math.round(lineupTotals.carbs_g || 0),
-    fats_g: Number(profile.macros_fat_g) || Math.round(lineupTotals.fats_g || 0),
+  // “complete” = every row has ingredient + grams (so it contributes macros)
+  // If you have multiple recipes per meal, this still works because rows are flattened.
+  return rows.every((r) => r.ingredient && Number(r.default_grams) > 0);
+}
+
+// After lineup created:
+const verified = [];
+for (const meal of lineup) {
+  const ok = await mealHasCompleteIngredients(meal.id);
+  if (ok) verified.push(meal);
+  else console.warn("[MealPlans] Dropping meal with missing ingredient lines:", meal.id);
+}
+
+// If we dropped too many, fail loudly (better than generating junk)
+if (verified.length < lineup.length) {
+  // You can decide your threshold. For MVP I’d require all 4.
+  return {
+    ok: false,
+    error: "Some meals are missing ingredient data. Please complete recipes before generating a plan.",
   };
+}
+
+lineup = verified;
+
+  // 3) Hard-require profile macro targets (no fallback to lineup totals)
+const numOrNull = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+
+const pKcal = numOrNull(profile.macros_kcal);
+const pP = numOrNull(profile.macros_protein_g);
+const pC = numOrNull(profile.macros_carbs_g);
+const pF = numOrNull(profile.macros_fat_g);
+
+if ([pKcal, pP, pC, pF].some((v) => v == null)) {
+  console.error("[MealPlans] Missing profile macro targets", {
+    macros_kcal: profile.macros_kcal,
+    macros_protein_g: profile.macros_protein_g,
+    macros_carbs_g: profile.macros_carbs_g,
+    macros_fat_g: profile.macros_fat_g,
+  });
+
+  return {
+    ok: false,
+    error: "Missing macro targets. Please complete your macro targets before generating a plan.",
+  };
+}
+
+const macrosUsed = {
+  calories: Math.round(pKcal),
+  protein_g: Math.round(pP),
+  carbs_g: Math.round(pC),
+  fats_g: Math.round(pF),
+};
+
+console.log("[MealPlans] macrosUsed (profile)", macrosUsed);
 
   // 4) Get-or-create meal_plans (1 per user per day)
   const todayISO = new Date().toISOString().slice(0, 10);
@@ -761,6 +987,8 @@ async function _generateMealPlanForCurrentUser() {
     user_id: user.id,
     generated_for: todayISO,
     macros_used: macrosUsed,
+    status: "pending",
+    error_reason: null,
     profile_snapshot: {
       goal: profile.goal,
       macro_mode: profile.macros_mode ?? profile.macro_mode,
@@ -928,169 +1156,270 @@ async function _generateMealPlanForCurrentUser() {
 
   const scaledByItemId = new Map();
 
-  // Scale each meal to hit target macros and persist scaled_macros
-  for (const itemRow of itemsRows || []) {
-    const target = updates.find((u) => u.id === itemRow.id)?.target_macros;
-    if (!target) continue;
+const itemStates = []; // <-- NEW: hold per-item working lines in memory
 
-    const mealRes = await getMealWithIngredients(itemRow.meal_id);
-    if (!mealRes.ok) {
-      console.error("[Scaling] getMealWithIngredients failed", mealRes.error);
-      return { ok: false, error: mealRes.error };
-    }
+for (const itemRow of itemsRows || []) {
+  const target = updates.find((u) => u.id === itemRow.id)?.target_macros;
+  if (!target) continue;
 
-    const components = mealRes.data || [];
+  const mealRes = await getMealWithIngredients(itemRow.meal_id);
+  if (!mealRes.ok) return { ok: false, error: mealRes.error };
 
-    console.log("[Scaling] component keys", Object.keys(components?.[0] || {}));
+  const components = mealRes.data || [];
 
-    const lines = [];
-    for (const row of components) {
-      // If the join didn't bring back an ingredient object, this row can't contribute macros
-      if (!row.ingredient) continue;
+  // Flatten → "lines"
+  const lines = [];
+  for (const row of components) {
+    if (!row.ingredient) continue;
 
-      const pm = Number(row.portion_multiplier) || 1;
+    const pm = Number(row.portion_multiplier) || 1;
 
-      const base = Number(row.default_grams);
-      if (!Number.isFinite(base) || base <= 0) continue;
+    const base = Number(row.default_grams);
+    if (!Number.isFinite(base) || base <= 0) continue;
 
-      const scaledBase = base * pm;
+    lines.push({
+      recipe_id: row.recipe_id,
+      ingredient_id: row.ingredient_id,
+      name: row.ingredient?.name,
+      category: (row.ingredient?.category || "").toLowerCase(),
 
-      lines.push({
-        recipe_id: row.recipe_id,
-        ingredient_id: row.ingredient_id,
-        name: row.ingredient?.name,
-        category: (row.ingredient?.category || "").toLowerCase(),
+      // NEW columns you added:
+      scaling_role: row.scaling_role || "anchor",
+      step_grams: row.step_grams || 1,
 
-        min_grams: row.min_grams == null ? null : Number(row.min_grams) * pm,
-        max_grams: row.max_grams == null ? null : Number(row.max_grams) * pm,
+      min_grams: row.min_grams == null ? null : Number(row.min_grams) * pm,
+      max_grams: row.max_grams == null ? null : Number(row.max_grams) * pm,
 
-        ingredient: row.ingredient,
-        grams: scaledBase,
-      });
-    }
-
-    const clamp = (g, minG, maxG) => {
-      let out = Number(g) || 0;
-      const min = minG == null ? null : Number(minG);
-      const max = maxG == null ? null : Number(maxG);
-
-      if (Number.isFinite(min)) out = Math.max(out, min);
-      if (Number.isFinite(max) && max > 0) out = Math.min(out, max);
-      return out;
-    };
-
-    const totalsFrom = (arr) =>
-      arr.reduce(
-        (acc, l) => {
-          const g = Number(l.grams) || 0;
-          const ing = l.ingredient || {};
-          acc.calories += g * (Number(ing.kcal_per_gram) || 0);
-          acc.protein  += g * (Number(ing.protein_g_per_gram) || 0);
-          acc.carbs    += g * (Number(ing.carbs_g_per_gram) || 0);
-          acc.fats     += g * (Number(ing.fat_g_per_gram) || 0);
-          return acc;
-        },
-        { calories: 0, protein: 0, carbs: 0, fats: 0 }
-      );
-
-    const leverContribution = (arr, categories) =>
-      totalsFrom(arr.filter((l) => categories.includes(l.category)));
-
-    const PROTEIN_CATS = ["protein"];
-    const CARB_CATS = ["carb"];
-    const FAT_CATS = ["fat"];
-
-
-
-    console.log("[Scaling] lines count", lines.length);
-
-    if (lines.length === 0) {
-      console.warn("[Scaling] No ingredient lines after flatten", {
-        meal_id: itemRow.meal_id,
-        components: components.length,
-        firstComponentKeys: Object.keys(components?.[0] || {}),
-      });
-      continue;
-    }
-
-    console.log("[Scaling] first line", lines[0]);
-    console.log("[Scaling] first ingredient macros",
-      lines[0]?.ingredient?.kcal_per_gram,
-      lines[0]?.ingredient?.protein_g_per_gram,
-      lines[0]?.ingredient?.carbs_g_per_gram,
-      lines[0]?.ingredient?.fat_g_per_gram
-    );
-
-    console.log("[Scaling] base totals from defaults", totalsFrom(lines));
-
-    console.log("[Scaling] lever contribution",
-      {
-        protein: leverContribution(lines, PROTEIN_CATS),
-        carbs: leverContribution(lines, CARB_CATS),
-        fats: leverContribution(lines, FAT_CATS),
-      }
-    );
-
-
-
-    let working = lines.map((l) => ({
-      ...l,
-      grams: clamp(l.grams, l.min_grams, l.max_grams),
-    }));
-
-    for (let pass = 0; pass < 2; pass += 1) {
-      const curP = leverContribution(working, PROTEIN_CATS).protein;
-      const mp = curP > 0 ? target.protein / curP : 1;
-      working = working.map((l) => {
-        if (!PROTEIN_CATS.includes(l.category)) return l;
-        return { ...l, grams: clamp(l.grams * mp, l.min_grams, l.max_grams) };
-      });
-
-      const curC = leverContribution(working, CARB_CATS).carbs;
-      const mc = curC > 0 ? target.carbs / curC : 1;
-      working = working.map((l) => {
-        if (!CARB_CATS.includes(l.category)) return l;
-        return { ...l, grams: clamp(l.grams * mc, l.min_grams, l.max_grams) };
-      });
-
-      const curF = leverContribution(working, FAT_CATS).fats;
-      const mf = curF > 0 ? target.fats / curF : 1;
-      working = working.map((l) => {
-        if (!FAT_CATS.includes(l.category)) return l;
-        return { ...l, grams: clamp(l.grams * mf, l.min_grams, l.max_grams) };
-      });
-    }
-
-    const scaledTotals = totalsFrom(working);
-
-    const scaledPayload = {
-      calories: Math.round(scaledTotals.calories),
-      protein: Math.round(scaledTotals.protein),
-      carbs: Math.round(scaledTotals.carbs),
-      fats: Math.round(scaledTotals.fats),
-    };
-
-    scaledByItemId.set(itemRow.id, scaledPayload);
-
-    const { error } = await supabase
-      .from("meal_plan_items")
-      .update({
-        scaled_macros: scaledPayload,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", itemRow.id);
-
-    if (error) {
-      console.error("[Scaling] update scaled_macros error", error);
-      return { ok: false, error: error.message };
-    }
-
-    console.log("[Scaling] wrote scaled_macros ✅", {
-      item_id: itemRow.id,
-      meal_id: itemRow.meal_id,
-      scaled_macros: scaledPayload,
+      ingredient: row.ingredient,
+      grams: base * pm,
     });
   }
+
+  if (lines.length === 0) continue;
+
+  // Initial clamp
+  let working = lines.map((l) => ({
+    ...l,
+    grams: clampGrams(l.grams, l.min_grams, l.max_grams),
+  }));
+
+  const leverContribution = (arr, macro) =>
+  totalsFromLines(arr.filter((l) => isLeverFor(l.scaling_role, macro)));
+
+  for (let pass = 0; pass < 2; pass += 1) {
+   // Protein
+    {
+      const curP = leverContribution(working, "protein").protein;
+      const mp = curP > 0 ? target.protein / curP : 1;
+
+      working = working.map((l) => {
+        if (!isLeverFor(l.scaling_role, "protein")) return l;
+
+        const next = clampGrams(l.grams * mp, l.min_grams, l.max_grams);
+        const stepped = stepRound(next, l.step_grams);
+        return { ...l, grams: clampGrams(stepped, l.min_grams, l.max_grams) };
+      });
+    }
+
+    // Carbs
+    {
+      const curC = leverContribution(working, "carb").carbs;
+      const mc = curC > 0 ? target.carbs / curC : 1;
+
+      working = working.map((l) => {
+        if (!isLeverFor(l.scaling_role, "carb")) return l;
+
+        const next = clampGrams(l.grams * mc, l.min_grams, l.max_grams);
+        const stepped = stepRound(next, l.step_grams);
+        return { ...l, grams: clampGrams(stepped, l.min_grams, l.max_grams) };
+      });
+    }
+
+    // Fats
+    {
+      const curF = leverContribution(working, "fat").fats;
+      const mf = curF > 0 ? target.fats / curF : 1;
+
+      working = working.map((l) => {
+        if (!isLeverFor(l.scaling_role, "fat")) return l;
+
+        const next = clampGrams(l.grams * mf, l.min_grams, l.max_grams);
+        const stepped = stepRound(next, l.step_grams);
+        return { ...l, grams: clampGrams(stepped, l.min_grams, l.max_grams) };
+      });
+    }
+  }
+
+  // Save to in-memory states (DON'T write scaled_macros yet)
+  itemStates.push({
+    item_id: itemRow.id,
+    meal_id: itemRow.meal_id,
+    target,
+    working, // <-- this is what the day pass will tweak
+  });
+}
+
+console.log(
+  "[DEBUG] itemStates totals",
+  itemStates.map(st => ({
+    item: st.item_id,
+    totals: totalsFromLines(st.working),
+    target: st.target
+  }))
+);
+
+function leverRoomReport(itemStates) {
+  const report = {
+    carbs: { add: 0, remove: 0 },
+    protein: { add: 0, remove: 0 },
+    fats: { add: 0, remove: 0 },
+  };
+
+  for (const st of itemStates) {
+    for (const l of st.working) {
+      if (!isAnyLever(l.scaling_role)) continue;
+
+      const step = Number(l.step_grams) || 1;
+      const g = Number(l.grams) || 0;
+      const min = l.min_grams == null ? null : Number(l.min_grams);
+      const max = l.max_grams == null ? null : Number(l.max_grams);
+
+      const canAdd = max == null || g + step <= max + 1e-9;
+      const canRemove = min == null || g - step >= min - 1e-9;
+
+      const ing = l.ingredient || {};
+      const p = Number(ing.protein_g_per_gram) || 0;
+      const c = Number(ing.carbs_g_per_gram) || 0;
+      const f = Number(ing.fat_g_per_gram) || 0;
+
+      const role = normRole(l.scaling_role);
+
+      if (role === "lever_carb") {
+        if (canAdd) report.carbs.add++;
+        if (canRemove) report.carbs.remove++;
+      }
+      if (role === "lever_protein") {
+        if (canAdd) report.protein.add++;
+        if (canRemove) report.protein.remove++;
+      }
+      if (role === "lever_fat") {
+        if (canAdd) report.fats.add++;
+        if (canRemove) report.fats.remove++;
+      }
+    }
+  }
+
+  console.log("[LeverRoomReport]", report);
+}
+leverRoomReport(itemStates);
+
+const carbLevers = [];
+for (const st of itemStates) {
+  for (const l of st.working) {
+    if (!isLeverFor(l.scaling_role, "carb")) continue;
+    const c = Number(l.ingredient?.carbs_g_per_gram) || 0;
+    if (c <= 0) continue;
+
+    carbLevers.push({
+      name: l.name,
+      grams: l.grams,
+      min: l.min_grams,
+      max: l.max_grams,
+      step: l.step_grams,
+      carbsPerGram: c,
+    });
+  }
+}
+console.table(carbLevers);
+
+
+// Daily target macros (use your profile targets)
+const dailyTarget = {
+  protein: macrosUsed.protein_g,
+  carbs: macrosUsed.carbs_g,
+  fats: macrosUsed.fats_g,
+};
+
+console.log("[DayBalance] dailyTarget", dailyTarget);
+console.log("[DayBalance] macrosUsed", macrosUsed);
+
+// Day-level balance to tighten to ±2–3g
+const dayBalanceRes = balanceDayAcrossItems(itemStates, dailyTarget, {
+  tolerance: 3,   // you can set 2.5 later
+  maxIters: 700,
+});
+
+console.log("[DayBalance]", dayBalanceRes);
+
+const finalDayTotals = itemStates.reduce(
+  (acc, st) => {
+    const t = totalsFromLines(st.working);
+    acc.calories += t.calories;
+    acc.protein += t.protein;
+    acc.carbs += t.carbs;
+    acc.fats += t.fats;
+    return acc;
+  },
+  { calories: 0, protein: 0, carbs: 0, fats: 0 }
+);
+
+const withinTol = (a, b, tol) => Math.abs((a || 0) - (b || 0)) <= tol;
+
+const tol = 3;
+const ok =
+  withinTol(finalDayTotals.protein, dailyTarget.protein, tol) &&
+  withinTol(finalDayTotals.carbs, dailyTarget.carbs, tol) &&
+  withinTol(finalDayTotals.fats, dailyTarget.fats, tol);
+
+if (!ok) {
+  console.error("[DayBalance] FAILED", { finalDayTotals, dailyTarget, dayBalanceRes });
+
+  // Mark plan as failed with reason
+  await supabase
+    .from("meal_plans")
+    .update({
+      status: "failed",
+      error_reason: "DayBalance failed to meet targets",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", planRow.id);
+
+  return {
+    ok: false,
+    error: "Could not generate a plan that matches your targets. Please try regenerate or complete recipe lever ranges.",
+  };
+}
+
+// Now persist each item's FINAL scaled_macros
+for (const st of itemStates) {
+  const scaledTotals = totalsFromLines(st.working);
+  const scaledPayload = roundScaledPayload(scaledTotals);
+
+  scaledByItemId.set(st.item_id, scaledPayload);
+
+  const { error } = await supabase
+    .from("meal_plan_items")
+    .update({
+      scaled_macros: scaledPayload,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", st.item_id);
+
+  if (error) {
+    console.error("[Scaling] update scaled_macros error", error);
+    return { ok: false, error: error.message };
+  }
+}
+
+  // 6) Mark plan as ready
+await supabase
+  .from("meal_plans")
+  .update({
+    status: "ready",
+    error_reason: null,
+    updated_at: new Date().toISOString(),
+  })
+  .eq("id", planRow.id);
 
   console.log("[MealPlans] about to clear plan_stale...");
 
@@ -1102,6 +1431,7 @@ async function _generateMealPlanForCurrentUser() {
   });
 
   console.log("[MealPlans] clear plan_stale finished:", clearRes);
+  console.log("[MealPlans] generator reached");
 
   if (!clearRes.ok) {
     console.error("[MealPlans] Failed to clear plan_stale", clearRes.error);
@@ -1109,7 +1439,7 @@ async function _generateMealPlanForCurrentUser() {
   }
 
   console.log("[MealPlans] ✅ returning ok:true from _generateMealPlanForCurrentUser");
-  
+
     return {
       ok: true,
       data: {
@@ -1446,15 +1776,19 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   }
 
   // 1) Get the most recent meal_plan for this user
+  const todayISO = new Date().toISOString().slice(0, 10);
+
   const { data: plan, error: planError } = await supabase
-    .from("meal_plans")
-    .select("id, generated_for, macros_used, profile_snapshot, created_at")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  .from("meal_plans")
+  .select("id, generated_for, macros_used, profile_snapshot, created_at")
+  .eq("user_id", user.id)
+  .eq("generated_for", todayISO)
+  .eq("status", "ready")
+  .maybeSingle();
 
     console.log("[Plan] user/date", user.id, plan?.generated_for);
+    console.log("[Plan] loaded", plan?.generated_for, plan?.macros_used);
+
 
   if (planError) {
     console.error("[MealPlans] getLatestSavedMealPlanForCurrentUser plan error", planError);
@@ -1541,6 +1875,7 @@ export async function getLatestSavedMealPlanForCurrentUser() {
   }
 
   console.log("[MealRecipes] mapped", recipeIdByMealId.size, "of", mealIds.length);
+  console.log("[Items] plan_id", plan.id, "first item plan_id", items?.[0]?.meal_plan_id);
 
   const mealsById = new Map(meals.map((m) => [m.id, m]));
   const num = (x) => (Number.isFinite(Number(x)) ? Number(x) : 0);
@@ -1691,27 +2026,30 @@ export async function getMealWithIngredients(mealId) {
 
   // 2) Load all recipe_ingredients for those recipes + ingredient nutrition
   const { data: recipeIngredients, error: riErr } = await supabase
-    .from("recipe_ingredients")
-    .select(`
+  .from("recipe_ingredients")
+  .select(`
+    id,
+    recipe_id,
+    ingredient_id,
+    default_grams,
+    min_grams,
+    max_grams,
+    scaling_role,
+    step_grams,
+    ingredient:ingredients (
       id,
-      recipe_id,
-      ingredient_id,
-      default_grams,
-      min_grams,
-      max_grams,
-      ingredient:ingredients (
-        id,
-        name,
-        category,
-        kcal_per_gram,
-        protein_g_per_gram,
-        carbs_g_per_gram,
-        fat_g_per_gram,
-        grams_per_unit,
-        unit_label
-      )
-    `)
-    .in("recipe_id", recipeIds);
+      name,
+      category,
+      is_starchy,
+      kcal_per_gram,
+      protein_g_per_gram,
+      carbs_g_per_gram,
+      fat_g_per_gram,
+      grams_per_unit,
+      unit_label
+    )
+  `)
+  .in("recipe_id", recipeIds);
 
   if (riErr) {
     console.error("[Meal] getMealWithIngredients recipe_ingredients error", riErr);
@@ -1873,6 +2211,9 @@ export async function getMealPlanItemDetails(mealPlanItemId) {
       slot: data.course,
       sequence_index: data.sequence_index,
       macros: macrosToShow,
+
+      target_macros: data.target_macros || null,
+      scaled_macros: data.scaled_macros || null,
     },
   };
 }
@@ -2092,6 +2433,8 @@ const items = chosen.map((m, idx) => ({
   meal_id: m.id,
   sequence_index: idx,
 }));
+
+console.log("[Regen] starting regenerate...");
 
 const { error: itemsErr } = await supabase.from("meal_plan_items").insert(items);
 if (itemsErr) return { ok: false, error: itemsErr.message };
