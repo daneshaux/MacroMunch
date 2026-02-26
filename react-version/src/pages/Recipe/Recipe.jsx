@@ -38,12 +38,21 @@ const SPICES = [
   "1 tsp cinnamon",
 ];
 
+const OPTIONS = [
+  "Sunrise Protein Oats",
+  "Ginger Miso Bowl",
+  "Chimichurri Steaks",
+  "Mushroom Ravioli",
+  "Beyond Chilli"
+]
+
 function Recipe({ firstName = "there" }) {
   const navigate = useNavigate();
   const safeName = firstName?.trim() || "there";
 
   const [ingredientsOpen, setIngredientsOpen] = useState(false);
   const [spicesOpen, setSpicesOpen] = useState(false);
+  const [swapOpen, setSwapOpen] = useState(false)
 
   return (
     <main className={styles.screen}>
@@ -82,6 +91,22 @@ function Recipe({ firstName = "there" }) {
             >
               <div className={styles.mealMedia}>
                 <img src={meal.image} alt={meal.title} />
+              </div>
+
+              <div className={styles.swapSection}>
+                <div onClick={() => setSwapOpen(!swapOpen)} className={styles.swapButton}>Swap Meal</div>
+                {swapOpen && (
+                  <div className={styles.swapOptionSection}>
+                    <div className={styles.swapOptions}>
+                      <div>
+                        {OPTIONS.map((option) => (
+                        <h5 className={styles.option}>{option}</h5>
+                      ))}</div>
+                    </div>
+                    <div className={styles.cancelButton}>Cancel</div>
+                  </div>
+                )}
+                  
               </div>
 
               {/* Ingredients */}
